@@ -20,85 +20,6 @@ model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
 
-class Vgg19(torch.nn.Module):
-    def __init__(self, requires_grad=False):
-        super(Vgg19, self).__init__()
-        vgg_pretrained_features = torchmodel.vgg19(pretrained=True).features
-        self.slice1 = torch.nn.Sequential()
-        self.slice2 = torch.nn.Sequential()
-        self.slice3 = torch.nn.Sequential()
-        self.slice4 = torch.nn.Sequential()
-        self.slice5 = torch.nn.Sequential()
-        for x in range(2):
-            self.slice1.add_module(str(x), vgg_pretrained_features[x])
-        for x in range(2, 7):
-            self.slice2.add_module(str(x), vgg_pretrained_features[x])
-        for x in range(7, 12):
-            self.slice3.add_module(str(x), vgg_pretrained_features[x])
-        for x in range(12, 21):
-            self.slice4.add_module(str(x), vgg_pretrained_features[x])
-        for x in range(21, 30):
-            self.slice5.add_module(str(x), vgg_pretrained_features[x])
-        if not requires_grad:
-            for param in self.parameters():
-                param.requires_grad = False
-
-    def forward(self, X):
-        h_relu1 = self.slice1(X)
-        h_relu2 = self.slice2(h_relu1) 
-        h_relu3 = self.slice3(h_relu2)
-        h_relu4 = self.slice4(h_relu3)
-        h_relu5 = self.slice5(h_relu4) 
-        return [h_relu1, h_relu2, h_relu3, h_relu4, h_relu5]
-
-class CharbonnierLoss(nn.Module):
-    """Charbonnier Loss (L1)"""
-
-    def __init__(self, eps=1e-3):
-        super(CharbonnierLoss, self).__init__()
-        self.eps = eps
-
-    def forward(self, x, y):
-        diff = x - y
-        # loss = torch.sum(torch.sqrt(diff * diff + self.eps))
-        loss = torch.mean(torch.sqrt((diff * diff) + (self.eps*self.eps)))
-        return loss
-class ContrastLoss(nn.Module):
-    def __init__(self, ablation=False):
-
-        super(ContrastLoss, self).__init__()
-        self.vgg = Vgg19().cuda()
-        self.l1 = nn.L1Loss()
-        self.weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
-        self.ab = ablation
-        # crf = scio.loadmat('/home/lmy/Desktop/2022/transformer/HSIDenoising/utility/P.mat')['P'].transpose((1,0))
-        # self.crf = torch.FloatTensor(crf).cuda()
-
-    def forward(self, a, p, n):
-       # print(self.crf.shape,a.shape)
-        # a = einsum('b c h w, c k -> b k h w', a, self.crf)
-        # p = einsum('b c h w, c k -> b k h w', p, self.crf)
-        # n = einsum('b c h w, c k -> b k h w', n, self.crf)
-        # #a = torch.matmul(a,self.crf)
-        # p = torch.matmul(self.crf,p)
-        # n = torch.matmul(self.crf,n)
-        a = a[:,:3,...]
-        p = p[:,:3,...]
-        n = n[:,:3,...]
-        a_vgg, p_vgg, n_vgg = self.vgg(a), self.vgg(p), self.vgg(n)
-        loss = 0
-
-        d_ap, d_an = 0, 0
-        for i in range(len(a_vgg)):
-            d_ap = self.l1(a_vgg[i], p_vgg[i].detach())
-            if not self.ab:
-                d_an = self.l1(a_vgg[i], n_vgg[i].detach())
-                contrastive = d_ap / (d_an + 1e-7)
-            else:
-                contrastive = d_ap
-
-            loss += self.weights[i] * contrastive
-        return loss
 
 
 class MultipleLoss(nn.Module):
@@ -116,21 +37,6 @@ class MultipleLoss(nn.Module):
     def extra_repr(self):
         return 'weight={}'.format(self.weight)
 
-class L1Consist(nn.Module):
-    def __init__(self, losses, weight=None):
-        super(L1Consist, self).__init__()
-        self.loss1 = losses[0]
-        self.loss_cons = losses[1]
-        self.weight = weight or [1/len(self.losses)] * len(self.losses)
-    
-    def forward(self, predict, target,inputs):
-        total_loss = 0
-        total_loss += self.loss1(predict, target) * self.weight[0]
-        total_loss += self.loss_cons( predict , target,inputs) * self.weight[1]
-        return total_loss
-
-    def extra_repr(self):
-        return 'weight={}'.format(self.weight)
 
 def train_options(parser):
     def _parse_str_args(args):
@@ -212,22 +118,6 @@ def make_dataset(opt, train_transform, target_transform, common_transform, batch
     return train_loader
 
 
-def make_metadataset(opt, train_transform, target_transform, common_transform, batch_size=None, repeat=1):
-    dataset = LMDBDataset(opt.dataroot, repeat=repeat)
-    # dataset.length -= 1000
-    # dataset.length = size or dataset.length
-
-    """Split patches dataset into training, validation parts"""
-    dataset = TransformDataset(dataset, common_transform)
-
-    train_dataset = MetaRandomDataset(dataset, opt.n_way, opt.k_spt, opt.k_qry, train_transform, target_transform)
-
-    train_loader = DataLoader(train_dataset,
-                              batch_size=batch_size or opt.batchSize, shuffle=True,
-                              num_workers=opt.threads, pin_memory=not opt.no_cuda, worker_init_fn=worker_init_fn)
-    
-    return train_loader
-
 class Engine(object):
     def __init__(self, opt):
         self.prefix = opt.prefix
@@ -287,12 +177,6 @@ class Engine(object):
             self.criterion = MultipleLoss([nn.MSELoss(), SSIMLoss(data_range=1, channel=31)], weight=[1, 2.5e-3])
         if self.opt.loss == 'l2_sam':
             self.criterion = MultipleLoss([nn.MSELoss(),SAMLoss()],weight=[1, 1e-3])
-        if self.opt.loss == 'cons':
-            self.criterion = L1Consist([nn.L1Loss(),ContrastLoss(ablation=False)],weight=[1, 1])
-        if self.opt.loss == 'cons_l2':
-            self.criterion = L1Consist([nn.MSELoss(),ContrastLoss(ablation=False)],weight=[1, 0.01])
-        if self.opt.loss =='char':
-            self.criterion = CharbonnierLoss()
 
         print(self.criterion)
 
@@ -313,7 +197,7 @@ class Engine(object):
         """Resume previous model"""
         if self.opt.resume:
             # Load checkpoint.
-            self.load(self.opt.resumePath, not self.opt.no_ropt)
+            self.load(self.opt.resumePath)
         else:
             print('==> Building model..')
            # print(self.net)
@@ -327,28 +211,12 @@ class Engine(object):
         # print('{:<30}  {:<8}'.format('Computational complexity: ', macs))
         # print('{:<30}  {:<8}'.format('Number of parameters: ', params))
 #        print(self.net.flops([64,64]))
-        # input_res= (31, 64, 64)
-
-        # batch = torch.ones(()).new_empty((1, *input_res),
-        #                                      dtype=next(self.net.parameters()).dtype,
-        #                                      device=next(self.net.parameters()).device)
-        # #print(input_res.shape)
-        # #from fvcore.nn import FlopCountAnalysis
-        # from flop_count.flop_count import FlopCountAnalysis
-        # flops = FlopCountAnalysis(self.net, batch)
-        # print(flops.total())
-
-        # from thop import profile
-        # macs, params = profile(self.net, inputs=(batch, ))
-       # print(macs)
+       
        
 
 
         
 
-        # from torchstat import stat
-        # stat(self.net, (3, 256, 256))
-      #  print(self.net.flops())
 
     def reset_params(self):
         init_params(self.net, init_type=self.opt.init) # disable for default initialization
@@ -361,42 +229,6 @@ class Engine(object):
         
         return output
 
-    def forward_chop(self, x, base=16):        
-        n, c, b, h, w = x.size()
-        h_half, w_half = h // 2, w // 2
-        
-        shave_h = np.ceil(h_half / base) * base - h_half
-        shave_w = np.ceil(w_half / base) * base - w_half
-
-        shave_h = shave_h if shave_h >= 10 else shave_h + base
-        shave_w = shave_w if shave_w >= 10 else shave_w + base
-
-        h_size, w_size = int(h_half + shave_h), int(w_half + shave_w)        
-        
-        inputs = [
-            x[..., 0:h_size, 0:w_size],
-            x[..., 0:h_size, (w - w_size):w],
-            x[..., (h - h_size):h, 0:w_size],
-            x[..., (h - h_size):h, (w - w_size):w]
-        ]
-
-        outputs = [self.net(input_i) for input_i in inputs]
-
-        output = torch.zeros_like(x)
-        output_w = torch.zeros_like(x)
-        
-        output[..., 0:h_half, 0:w_half] += outputs[0][..., 0:h_half, 0:w_half]
-        output_w[..., 0:h_half, 0:w_half] += 1
-        output[..., 0:h_half, w_half:w] += outputs[1][..., 0:h_half, (w_size - w + w_half):w_size]
-        output_w[..., 0:h_half, w_half:w] += 1
-        output[..., h_half:h, 0:w_half] += outputs[2][..., (h_size - h + h_half):h_size, 0:w_half]
-        output_w[..., h_half:h, 0:w_half] += 1
-        output[..., h_half:h, w_half:w] += outputs[3][..., (h_size - h + h_half):h_size, (w_size - w + w_half):w_size]
-        output_w[..., h_half:h, w_half:w] += 1
-        
-        output /= output_w
-
-        return output
 
     def __step(self, train, inputs, targets):        
         if train:
@@ -417,21 +249,9 @@ class Engine(object):
             outputs = torch.cat(O, dim=1)
         else:
            
-            #noisy_sigma = torch.zeros
-            
-            #outputs = self.net(inputs)
+           
             outputs = torch.clamp(self.net(inputs), 0, 1)
-            # loss = self.criterion(outputs, targets)
             
-            # if outputs.ndimension() == 5:
-            #     loss = self.criterion(outputs[:,0,...], torch.clamp(targets[:,0,...], 0, 1))
-            # else:
-            #     loss = self.criterion(outputs, torch.clamp(targets, 0, 1))
-            #print(outputs.shape,torch.squeeze(outputs).shape,targets.shape)
-            #loss = self.criterion(outputs[:,0,...], targets[:,0,...])
-            # if self.net.use_2dconv == True:
-            #     loss = self.criterion(outputs[:,0,...], targets[:,0,...])
-            # else:
             
             loss = self.criterion(outputs[...], targets) #memnet
 
@@ -444,7 +264,7 @@ class Engine(object):
 
         return outputs, loss_data, total_norm
 
-    def load(self, resumePath=None, load_opt=True):
+    def load(self, resumePath=None, load_opt=False):
         model_best_path = join(self.basedir, self.prefix, 'model_latest.pth')
         if os.path.exists(model_best_path):
             best_model = torch.load(model_best_path)
@@ -452,19 +272,11 @@ class Engine(object):
         print('==> Resuming from checkpoint %s..' % resumePath)
         assert os.path.isdir('checkpoints'), 'Error: no checkpoint directory found!'
         checkpoint = torch.load(resumePath or model_best_path)
-        #### comment when using memnet
-        #self.epoch = checkpoint['epoch'] 
-        #self.iteration = checkpoint['iteration']
+      
         if load_opt:
             self.optimizer.load_state_dict(checkpoint['optimizer'])
-        ###
-      #  self.get_net().load_state_dict(checkpoint['net'])
 
-        
-        model_dict = self.get_net().state_dict()
-        pretrained_dict = {k: v for k, v in checkpoint['net'].items() if k in model_dict}
-        model_dict.update(pretrained_dict)
-        self.get_net().load_state_dict(model_dict)
+        self.get_net().load_state_dict(checkpoint['net'])
         
 
     def train(self, train_loader,val):
@@ -505,44 +317,7 @@ class Engine(object):
             self.writer.add_scalar(
                 join(self.prefix, 'train_loss_epoch'), avg_loss, self.epoch)
 
-    
-    def meta_train(self, maml, train_loader):
-        print('\nEpoch: %d' % self.epoch)
-        train_loss = 0
-        length = len(train_loader)
-        device = self.device
-        for batch_idx, (spt_x, spt_y, qry_x, qry_y, sigmas) in enumerate(train_loader):
-            if not self.opt.no_cuda:
-                spt_x, spt_y, qry_x, qry_y, sigmas = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device), sigmas.to(device)
-        
-            loss_data = maml(spt_x, spt_y, qry_x, qry_y, sigmas)
-            train_loss += loss_data
-            avg_loss = train_loss / (batch_idx+1)
-
-            if not self.opt.no_log:
-                self.writer.add_scalar(
-                    join(self.prefix, 'train_loss'), loss_data, self.iteration)
-                self.writer.add_scalar(
-                    join(self.prefix, 'train_avg_loss'), avg_loss, self.iteration)
-
-            self.iteration += 1
-            progress_bar(batch_idx, len(train_loader), 'AvgLoss: %.4e | Loss: %.4e' 
-                         % (avg_loss, loss_data))
-
-        self.epoch += 1
-        if not self.opt.no_log:
-            self.writer.add_scalar(
-                join(self.prefix, 'train_loss_epoch'), avg_loss, self.epoch)
-            
-
-    
-    # def internal_train(self, test_loader):
-    #     #self.net.train()
-    #     checkpoint = torch.load(self.opt.resumePath, lambda  storage, tag:storage.cuda())
-    #     external_checkpoint = checkpoint['net']
-    #     #test_denet(self.get_net(), test_loader, external_checkpoint, self.opt,self.writer)
-    #     #test_external_net(self.get_net(), test_loader, external_checkpoint, self.opt,self.writer)
-    #     internal_train_img(self.get_net(), test_loader, external_checkpoint, self.opt)
+ 
     def test(self, valid_loader, filen):
         self.net.eval()
         validate_loss = 0
@@ -564,10 +339,6 @@ class Engine(object):
                 if not self.opt.no_cuda:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)  
                    
-                    # inputs = inputs[:,10:20,:,:]
-                    # targets = targets[:,10:20,:,:]         
-                    
-                    #inputs = inputs.type(torch.FloatTensor)
                 outputs, loss_data, _ = self.__step(False, inputs, targets)
                 psnr = np.mean(cal_bwpsnr(outputs, targets))
                 sam = cal_sam(outputs, targets)
@@ -729,8 +500,6 @@ class Engine(object):
         print(avg_psnr, avg_loss,avg_sam)
         return avg_psnr, avg_loss,avg_sam
 
-
-
     def validate(self, valid_loader, name,patch_size=64):
         self.net.eval()
         validate_loss = 0
@@ -863,89 +632,7 @@ class Engine(object):
         torch.save(state, model_out_path)
         print("Checkpoint saved to {}".format(model_out_path))
 
-    # saving result into disk
-    def test_develop(self, test_loader, savedir=None, verbose=True):
-        from scipy.io import savemat
-        from os.path import basename, exists
 
-        def torch2numpy(hsi):
-            if self.net.use_2dconv:
-                R_hsi = hsi.data[0].cpu().numpy().transpose((1,2,0))
-            else:
-                R_hsi = hsi.data[0].cpu().numpy()[0,...].transpose((1,2,0))
-            return R_hsi    
-
-        self.net.eval()
-        test_loss = 0
-        total_psnr = 0
-        dataset = test_loader.dataset.dataset
-
-        res_arr = np.zeros((len(test_loader), 3))
-        input_arr = np.zeros((len(test_loader), 3))
-
-        with torch.no_grad():
-            for batch_idx, (inputs, targets) in enumerate(test_loader):
-                if not self.opt.no_cuda:
-                    inputs, targets = inputs.cuda(), targets.cuda()
-                outputs, loss_data, _ = self.__step(False, inputs, targets)
-                
-                test_loss += loss_data
-                avg_loss = test_loss / (batch_idx+1)
-                
-                res_arr[batch_idx, :] = MSIQA(outputs, targets)
-                input_arr[batch_idx, :] = MSIQA(inputs, targets)
-
-                """Visualization"""
-                # Visualize3D(inputs.data[0].cpu().numpy())
-                # Visualize3D(outputs.data[0].cpu().numpy())
-
-                psnr = res_arr[batch_idx, 0]
-                ssim = res_arr[batch_idx, 1]
-                if verbose:
-                    print(batch_idx, psnr, ssim)
-
-                if savedir:
-                    filedir = join(savedir, basename(dataset.filenames[batch_idx]).split('.')[0])  
-                    outpath = join(filedir, '{}.mat'.format(self.opt.arch))
-
-                    if not exists(filedir):
-                        os.mkdir(filedir)
-
-                    if not exists(outpath):
-                        savemat(outpath, {'R_hsi': torch2numpy(outputs)})
-                        
-        return res_arr, input_arr
-
-    def test_real(self, test_loader, savedir=None):
-        """Warning: this code is not compatible with bandwise flag"""
-        from scipy.io import savemat
-        from os.path import basename
-        self.net.eval()
-        dataset = test_loader.dataset.dataset
-
-        with torch.no_grad():
-            for batch_idx, inputs in enumerate(test_loader):
-                if not self.opt.no_cuda:
-                    inputs = inputs.cuda()           
-
-                outputs = self.forward(inputs)
-
-                """Visualization"""                
-                input_np = inputs[0].cpu().numpy()
-                output_np = outputs[0].cpu().numpy()
-
-                display = np.concatenate([input_np, output_np], axis=-1)
-                
-                Visualize3D(display)
-                # Visualize3D(outputs[0].cpu().numpy())
-                # Visualize3D((outputs-inputs).data[0].cpu().numpy())
-                
-                if savedir:
-                    R_hsi = outputs.data[0].cpu().numpy()[0,...].transpose((1,2,0))     
-                    savepath = join(savedir, basename(dataset.filenames[batch_idx]).split('.')[0], self.opt.arch + '.mat')
-                    savemat(savepath, {'R_hsi': R_hsi})
-        
-        return outputs
 
     def get_net(self):
         if len(self.opt.gpu_ids) > 1:
