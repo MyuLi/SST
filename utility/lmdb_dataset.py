@@ -6,7 +6,6 @@ import os.path
 import six
 import string
 import sys
-import caffe
 if sys.version_info[0] == 2:
     import cPickle as pickle
 else:
@@ -24,25 +23,24 @@ class LMDBDataset(data.Dataset):
             self.length = int(self.length)
             print(self.length)
         self.repeat = repeat
+        with open(os.path.join(db_path, 'meta_info.txt')) as fin:
+            line = fin.readlines()[0]
+            size = line.split('(')[1].split(')')[0]
+            h,w,c =[ int(s) for s in size.split(',')]
+        self.channels = c
+        self.width = h
+        self.height = w
       
 
     def __getitem__(self, index):
-        ri = index // self.length
-        ini_band = [0,10,20,21]
-        #ini_band = [10]
         index = index % (self.length)
         env = self.env
         with env.begin(write=False) as txn:
-            raw_datum = txn.get('{:08}'.format(index).encode('ascii'))
+            data = txn.get('{:08}'.format(index).encode('ascii'))
+        flat_x = np.fromstring(data, dtype=np.float32)
+       
+        x = flat_x.reshape(self.channels, self.height, self.width)
 
-        datum = caffe.proto.caffe_pb2.Datum()
-        datum.ParseFromString(raw_datum)
-
-        flat_x = np.fromstring(datum.data, dtype=np.float32)
-        # flat_x = np.fromstring(datum.data, dtype=np.float64)
-        x = flat_x.reshape(datum.channels, datum.height, datum.width)
-        # if self.repeat >= 1:
-        #     x = x[ini_band[ri]:ini_band[ri]+10,:,:]
         return x
 
     def __len__(self):
@@ -51,3 +49,10 @@ class LMDBDataset(data.Dataset):
     def __repr__(self):
         return self.__class__.__name__ + ' (' + self.db_path + ')'
 
+if __name__ == '__main__':
+    dataset = LMDBDataset('/data/HSI_Data/ICVL64_31_test.db')
+    
+    print(len(dataset))
+
+    train_loader = data.DataLoader(dataset, batch_size=128, num_workers=4)
+    print(iter(train_loader).next().shape)

@@ -1,7 +1,6 @@
 """Create lmdb dataset"""
 from util import *
 import lmdb
-import caffe
 import scipy.io as scio
 
 def create_lmdb_train(
@@ -54,6 +53,7 @@ def create_lmdb_train(
     if os.path.exists(name+'.db'):
         raise Exception('database already exist!')
     env = lmdb.open(name+'.db', map_size=map_size, writemap=True)
+    txt_file = open(os.path.join(name+'.db', 'meta_info.txt'), 'w')
     with env.begin(write=True) as txn:
         # txn is a Transaction object
         k = 0
@@ -66,27 +66,26 @@ def create_lmdb_train(
             X = preprocess(X)        
             N = X.shape[0]
             for j in range(N):
-                datum = caffe.proto.caffe_pb2.Datum()
-                datum.channels = X.shape[1]
-                datum.height = X.shape[2]
-                datum.width = X.shape[3]
-                datum.data = X[j].tobytes()
+                c,h,w = X.shape[1:]
+                data_byte = X[j].tobytes()
                 str_id = '{:08}'.format(k)
                 k += 1
-                txn.put(str_id.encode('ascii'), datum.SerializeToString())
+                txt_file.write(f'{str_id} ({h},{w},{c})\n')
+                txn.put(str_id.encode('ascii'), data_byte)
             print('load mat (%d/%d): %s' %(i,len(fns),fn))
-
+        txt_file.close()
+        env.close()
         print('done')
 
     
 def create_icvl64_31():
     print('create icvl_31...')
     datadir = '/data/HSI_Data/icvl_train_gaussian/' # your own data address
-    fns = os.listdir(datadir) 
+    fns = os.listdir(datadir)[:2]
     fns = [fn.split('.')[0]+'.mat' for fn in fns]
     
     create_lmdb_train(
-        datadir, fns, '/data/HSI_Data/ICVL64_31', 'rad',  # your own dataset address
+        datadir, fns, '/data/HSI_Data/ICVL64_31_test', 'rad',  # your own dataset address
         crop_sizes=(1024, 1024),
         scales=(1, 0.5, 0.25),        
         ksizes=(31, 64, 64),
@@ -109,5 +108,6 @@ def createApex():
     )
 
 if __name__ == '__main__':
-    createApex()
+    #createApex()
+    create_icvl64_31()
     pass

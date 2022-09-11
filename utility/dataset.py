@@ -10,13 +10,10 @@ try:
 except:
     from util import *
 
-from torchvision.transforms import Compose, ToPILImage, ToTensor, RandomHorizontalFlip, RandomChoice
 from torch.utils.data import DataLoader, Dataset
-from torchnet.dataset import TransformDataset, SplitDataset, TensorDataset, ResampleDataset
+from torchnet.dataset import TransformDataset, SplitDataset
 
 from PIL import Image
-from skimage.util import random_noise
-from scipy.ndimage.filters import gaussian_filter
 
 
 def worker_init_fn(worker_id):                                                          
