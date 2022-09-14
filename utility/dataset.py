@@ -652,16 +652,13 @@ def addNoise2ICVL():
     #     AddNoiseComplex(),
     # ])
     #add_noniid_noise = AddNoiseNoniid(sigmas)
-    #srcimg = '/home/rainy/QRNN3D/data/toy.mat'
     s_sigma = [10,30,50,70]
     #s_sigma = [0]
     for sigma in s_sigma:
-        #dstdir = '/data/HSI_Data/icvl_noise_50/512_mix'+'/'
         dstdir = '/data/HSI_Data/icvl_val_gaussian/'+'512_'+str(sigma)
         mkdir(dstdir)
         noisemodel = AddNoise(sigma)
         c = 0
-        #inpaintingmodel = AddInpaintingHole(0.05, 0.15,1/3)
         for filename in os.listdir(srcdir):
             c  = c + 1
             print(c)
@@ -669,10 +666,7 @@ def addNoise2ICVL():
             mat = loadmat(filepath)
             srchsi = mat['data'].transpose(2,0,1)
             
-           # inpaintinghsi, mask = inpaintingmodel(srchsi)
             noisyhsi = noisemodel(srchsi)
-            # noisyhsi = stripemodel(noisyhsi)
-            #noisyhsi = add_noniid_noise(srchsi)
             n_sigma = sigma/255
             savemat(os.path.join(dstdir, filename), {'gt': srchsi.transpose(
                 1, 2, 0),'sigma':n_sigma, 'input': noisyhsi.transpose(1, 2, 0)})

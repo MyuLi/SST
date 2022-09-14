@@ -279,6 +279,8 @@ class Engine(object):
         self.get_net().load_state_dict(checkpoint['net'])
         
 
+        
+
     def train(self, train_loader,val):
         print('\nEpoch: %d' % self.epoch)
         self.net.train()

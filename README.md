@@ -25,9 +25,18 @@ python utility/mat_data.py
 checkpoints are available at [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0
 ### Training on ICVL dataset
 ```
-python hsi_denoising_single.py -a sst -p sst_gaussian -b 8
+#for gaussian noise
+python hsi_denoising_single.py -a sst -p sst_gaussian -b 8 
+
+#for comlpex noise
+python hsi_denoising_complex.py -a sst -p sst_gaussian -b 8 
+
 ```
 ### Testing on ICVL dataset
 ```
+#for guassian noise
 python hsi_denoising_test.py -a sst -p sst_gaussian -r -rp checkepoints_guassian.pth 
+
+#for complex noise
+python hsi_denoising_test.py -a sst -p sst_complex -r -rp checkpoints/checkpoints_complex.pth
 ```

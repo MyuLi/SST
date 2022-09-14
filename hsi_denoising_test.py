@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
+from torchvision.transforms import Compose, ToPILImage, ToTensor
 import os
 import argparse
 from utility import *
@@ -34,7 +35,8 @@ if __name__ == '__main__':
 
     """Test-Dev"""
    # basefolder = '/data/HSI_Data/icvl_noise_50/512_50/'
-    basefolder = '/data/HSI_Data/icvl_val_gaussian/512_50'
+    #basefolder = '/data/HSI_Data/icvl_val_gaussian/512_50'
+    basefolder = '/data/HSI_Data/icvl_noise_50/512_noniid/'
     
     
     mat_datasets = [MatDataFromFolder(
