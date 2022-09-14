@@ -1,6 +1,10 @@
 # Code for Spatial-Spectral Transformer for Hyperspectral Image Denoising
 
-Training data, testing data and checkpoints are available at https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing
+The testing data of ICVL are availabel at https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0 
+提取码：azx0 
+checkpoints are available at https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing
+
+## Prepare Dataset:
 
 ### Training
 ```
