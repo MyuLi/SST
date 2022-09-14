@@ -73,19 +73,18 @@ def create_lmdb_train(
                 txt_file.write(f'{str_id} ({h},{w},{c})\n')
                 txn.put(str_id.encode('ascii'), data_byte)
             print('load mat (%d/%d): %s' %(i,len(fns),fn))
-        txt_file.close()
-        env.close()
+        
         print('done')
 
     
 def create_icvl64_31():
     print('create icvl_31...')
     datadir = '/data/HSI_Data/icvl_train_gaussian/' # your own data address
-    fns = os.listdir(datadir)[:2]
+    fns = os.listdir(datadir)
     fns = [fn.split('.')[0]+'.mat' for fn in fns]
     
     create_lmdb_train(
-        datadir, fns, '/data/HSI_Data/ICVL64_31_test', 'rad',  # your own dataset address
+        datadir, fns, '/media/lmy/LMY/aaai/ICVL64_31', 'rad',  # your own dataset address
         crop_sizes=(1024, 1024),
         scales=(1, 0.5, 0.25),        
         ksizes=(31, 64, 64),

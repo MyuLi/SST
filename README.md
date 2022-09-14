@@ -1,6 +1,6 @@
 # Code for Spatial-Spectral Transformer for Hyperspectral Image Denoising
 
-Checkpoints are available at https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing
+Training data, testing data and checkpoints are available at https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing
 
 ### Training
 ```

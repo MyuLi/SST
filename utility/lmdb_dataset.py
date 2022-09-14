@@ -50,9 +50,9 @@ class LMDBDataset(data.Dataset):
         return self.__class__.__name__ + ' (' + self.db_path + ')'
 
 if __name__ == '__main__':
-    dataset = LMDBDataset('/data/HSI_Data/ICVL64_31_test.db')
+    dataset = LMDBDataset('/media/lmy/LMY/aaai/ICVL64_31.db')
     
     print(len(dataset))
 
-    train_loader = data.DataLoader(dataset, batch_size=128, num_workers=4)
+    train_loader = data.DataLoader(dataset, batch_size=20, num_workers=4)
     print(iter(train_loader).next().shape)
