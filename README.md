@@ -44,3 +44,23 @@ python hsi_denoising_test.py -a sst -p sst_gaussian -r -rp checkepoints_guassian
 #for complex noise
 python hsi_denoising_test.py -a sst -p sst_complex -r -rp checkpoints/checkpoints_complex.pth
 ```
+***
+### Training on Wdc dataset
+```
+
+
+```
+### Testing on Wdc dataset
+```
+
+```
+***
+### Training for real dataset
+```
+
+
+```
+### Testing on real dataset
+```
+
+```
