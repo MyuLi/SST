@@ -1,16 +1,33 @@
 # Code for Spatial-Spectral Transformer for Hyperspectral Image Denoising
 
-The testing data of ICVL are availabel at https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0 
-提取码：azx0 
-checkpoints are available at https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing
 
 ## Prepare Dataset:
+### ICVL dataset
+The entire ICVL dataset download link: https://icvl.cs.bgu.ac.il/hyperspectral/
 
-### Training
+1. split the entire dataset into training, testing and validation. The files used in training are listed in utility/icvl_train_list.txt. The files used in testing can be found in [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0
+
+
+2. generate lmdb dataset for training
+
+```
+python utility/lmdb_data.py
+```
+
+3. download the testing data from BaiduDisk or generate them by yourself through
+
+```
+python utility/mat_data.py
+```
+
+## Experiement:
+
+checkpoints are available at [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0
+### Training on ICVL dataset
 ```
 python hsi_denoising_single.py -a sst -p sst_gaussian -b 8
 ```
-### Testing
+### Testing on ICVL dataset
 ```
 python hsi_denoising_test.py -a sst -p sst_gaussian -r -rp checkepoints_guassian.pth 
 ```
