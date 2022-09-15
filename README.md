@@ -1,9 +1,9 @@
 # Code for Spatial-Spectral Transformer for Hyperspectral Image Denoising
 
 
-## Prepare Dataset:
+## Prepare Dataset
 ### ICVL dataset
-The entire ICVL dataset download link: https://icvl.cs.bgu.ac.il/hyperspectral/
+* The entire ICVL dataset download link: https://icvl.cs.bgu.ac.il/hyperspectral/
 
 1. split the entire dataset into training, testing and validation. The files used in training are listed in utility/icvl_train_list.txt. The files used in testing can be found in [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0
 
@@ -24,9 +24,9 @@ python utility/mat_data.py
 
 checkpoints are available at 
 
-[Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0  
+* [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0  
 
-[Google Driver](https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing)
+* [Google Driver](https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing)
 ### Training on ICVL dataset
 ```
 #for gaussian noise
