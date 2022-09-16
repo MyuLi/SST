@@ -278,7 +278,16 @@ class Engine(object):
 
         self.get_net().load_state_dict(checkpoint['net'])
         
-
+        # model_dict = self.get_net().state_dict()
+        # pretrained_dict = {k: v for k, v in checkpoint['net'].items() if k in model_dict}
+        # model_dict.update(pretrained_dict)
+        # self.get_net().load_state_dict(model_dict)
+        
+        # state = {
+        #     'net': model_dict,
+        # }
+    
+        # torch.save(state, 'checkpoints/wdc_gaussian.pth')
         
 
     def train(self, train_loader,val):
@@ -299,9 +308,6 @@ class Engine(object):
             train_psnr += psnr
             avg_psnr = train_psnr/ (batch_idx+1)
             if not self.opt.no_log:
-                wandb.log({'train_psnr':avg_psnr},step=self.iteration)
-                wandb.log({'train_loss':loss_data},step=self.iteration)
-                wandb.log({'train_avg_loss':avg_loss},step=self.iteration)
                 self.writer.add_scalar(
                     join(self.prefix, 'train_psnr'), avg_psnr, self.iteration)
                 self.writer.add_scalar(
@@ -394,10 +400,7 @@ class Engine(object):
                     ergas += np.mean((img[k]-result[k])**2)/np.mean(img[k])**2
                 ergas = 100*np.sqrt(ergas/31)
                 ERGAS.append(ergas)
-                #print('saving')
-                #scio.savemat('/data/HSI_Data/Hyperspectral_Project/Indian_aaai/Ours/'+filenames[batch_idx], {'result': result})
-               # scio.savemat('/data/HSI_Data/Hyperspectral_Project/Urban_aaai/Ours/'+filenames[batch_idx], {'result': result})
-                # scio.savemat('/data/HSI_Data/Hyperspectral_Project/Urban_result/Ours/'+filenames[batch_idx], {'result': result})
+
         print(sum(PSNR)/len(PSNR), sum(RMSE)/len(RMSE), sum(SSIM)/len(SSIM), sum(SAM)/len(SAM), sum(ERGAS)/len(ERGAS))
         
         print(avg_psnr, avg_loss,avg_sam)
@@ -515,21 +518,8 @@ class Engine(object):
         print('[i] Eval dataset {}...'.format(name))
         with torch.no_grad():
             for batch_idx, (inputs, targets) in enumerate(valid_loader):
-                _,channel, width, height = inputs.shape
-                if ('cswin_unet' in self.opt.arch) or ('unfold' in self.opt.arch):
-                    input_patch = torch.zeros((64,31,64,64),dtype=torch.float)                 
-                    targets_patch = torch.zeros((64,31,64,64),dtype=torch.float)
-                    num=0
-                    for i in range(width//patch_size):                     
-                        for j in range(height//patch_size):                                                 
-                            sub_image = inputs[:,:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size]                         
-                            input_patch[num] = sub_image                   
-                            targets_patch[num] = targets[:,:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size]                         
-                            num += 1
-                    if not self.opt.no_cuda:                     
-                        inputs, targets = input_patch.to(self.device), targets_patch.to(self.device)   
-                else:                 
-                    inputs, targets = inputs.to(self.device), targets.to(self.device)
+                 
+                inputs, targets = inputs.to(self.device), targets.to(self.device)
 
                 outputs, loss_data, _ = self.__step(False, inputs, targets)
                 psnr = np.mean(cal_bwpsnr(outputs, targets))
@@ -547,24 +537,10 @@ class Engine(object):
                 
                 psnr = []
                 h,w=inputs.shape[-2:]
-                if ('cswin_unet' in self.opt.arch) or ('unfold' in self.opt.arch):
-                    result_patch = outputs.squeeze().cpu().detach().numpy()
-            
-                    img_patch = targets.squeeze().cpu().numpy()
                 
-                    result = np.zeros((31,512,512))
-                    img = np.zeros((31,512,512))
-                    h,w=result.shape[-2:]
-                    num=0
-                    for i in range(width//patch_size):
-                        for j in range(height//patch_size):
-                            result[:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size] = result_patch[num]
-                            img[:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size] = img_patch[num]
-                            num += 1
-                else:
-                    result = outputs.squeeze().cpu().detach().numpy()
+                result = outputs.squeeze().cpu().detach().numpy()
             
-                    img = targets.squeeze().cpu().numpy()
+                img = targets.squeeze().cpu().numpy()
                 for k in range(31):
                     psnr.append(10*np.log10((h*w)/sum(sum((result[k]-img[k])**2))))
                 PSNR.append(sum(psnr)/len(psnr))
@@ -600,9 +576,7 @@ class Engine(object):
                 
         
         print(sum(PSNR)/len(PSNR), sum(RMSE)/len(RMSE), sum(SSIM)/len(SSIM), sum(SAM)/len(SAM), sum(ERGAS)/len(ERGAS))
-        if not self.opt.no_log:
-            wandb.log({'val_loss_epoch':avg_loss,'val_psnr_epoch':avg_psnr,'val_sam_epoch':avg_sam,'epoch':self.epoch})             
-            
+        if not self.opt.no_log:      
             self.writer.add_scalar(
                 join(self.prefix, name, 'val_loss_epoch'), avg_loss, self.epoch)
             self.writer.add_scalar(

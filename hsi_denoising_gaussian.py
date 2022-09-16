@@ -9,7 +9,6 @@ from utility import *
 import datetime
 import time
 from hsi_setup import Engine, train_options, make_dataset
-os.environ["WANDB_MODE"] ='offline'
 
 if __name__ == '__main__':
     """Training settings"""
@@ -19,9 +18,6 @@ if __name__ == '__main__':
     opt = train_options(parser)
     print(opt)
 
-    data = datetime.datetime.now()
-    wandb.init(project="hsi-denoising2", entity="miayili",name=opt.arch+opt.prefix+'-'+str(data.month)+'-'+str(data.day)+'-'+str(data.hour)+':'+str(data.minute),config=opt)  
-    wandb.config.update(parser)
     
 
     """Setup Engine"""
@@ -78,7 +74,6 @@ if __name__ == '__main__':
     epoch_per_save = 5
     adjust_learning_rate(engine.optimizer, opt.lr)
 
-    # from epoch 50 to 100
     engine.epoch  = 0
     while engine.epoch < 100:
         np.random.seed()
@@ -102,4 +97,4 @@ if __name__ == '__main__':
         display_learning_rate(engine.optimizer)
         if engine.epoch % epoch_per_save == 0:
             engine.save_checkpoint()
-    wandb.finish()
+

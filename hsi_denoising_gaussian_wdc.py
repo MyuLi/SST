@@ -3,12 +3,12 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-from torchvision.transforms import Compose, ToPILImage, ToTensor
 import os
 import argparse
+
 from utility import *
 from hsi_setup import Engine, train_options, make_dataset
-import time
+
 
 if __name__ == '__main__':
     """Training settings"""
@@ -22,20 +22,29 @@ if __name__ == '__main__':
     engine = Engine(opt)
 
     """Dataset Setting"""
-    
     HSI2Tensor = partial(HSI2Tensor, use_2dconv=engine.net.use_2dconv)
 
-   
     target_transform = HSI2Tensor()
 
+    train_transform = Compose([
+        AddNoiseBlindv1(10,70),
+        HSI2Tensor()
+    ])
+
+    wdc_64_31 = LMDBDataset('/data5/limiaoyu/data/Hyperspectral_Project/WDC/train/data.db',repeat=10)
+    
+    
+    target_transform = HSI2Tensor()
+    train_dataset = ImageTransformDataset(wdc_64_31, train_transform,target_transform)
+    print('==> Preparing data..')
 
 
     """Test-Dev"""
-    basefolder = opt.testdir
+    basefolder = '/data5/limiaoyu/data/Hyperspectral_Project/WDC_noise/fixed/'
     
     
     mat_datasets = [MatDataFromFolder(
-        basefolder, size=50) ]
+        basefolder, size=1) ]
 
     if not engine.get_net().use_2dconv:
         mat_transform = Compose([
@@ -50,7 +59,10 @@ if __name__ == '__main__':
     mat_datasets = [TransformDataset(mat_dataset, mat_transform)
                     for mat_dataset in mat_datasets]
 
- 
+    train_loader = DataLoader(train_dataset,
+                              batch_size=opt.batchSize, shuffle=True,
+                              num_workers=8, pin_memory=not opt.no_cuda, worker_init_fn=worker_init_fn)
+    
     mat_loaders = [DataLoader(
         mat_dataset,
         batch_size=1, shuffle=False,
@@ -63,12 +75,26 @@ if __name__ == '__main__':
 
     # from epoch 50 to 100
     engine.epoch  = 0
-    
+    while engine.epoch < 100:
+        np.random.seed()
+ 
+        if engine.epoch == 50:
+            adjust_learning_rate(engine.optimizer, base_lr*0.1)
 
-        # if engine.epoch == 70:
-        #     adjust_learning_rate(engine.optimizer, base_lr*0.01)
-    strart_time = time.time()
-    engine.test(mat_loaders[0], basefolder)
-    end_time = time.time()
-    test_time = end_time-strart_time
-    print('cost-time: ',(test_time/50))
+
+        
+        engine.train(train_loader,mat_loaders[0])
+
+        engine.validate(mat_loaders[0], 'icvl-validate-noniid')
+        #engine.validate(mat_loaders[1], 'icvl-validate-mixture')
+
+        display_learning_rate(engine.optimizer)
+        print('Latest Result Saving...')
+        model_latest_path = os.path.join(engine.basedir, engine.prefix, 'model_latest.pth')
+        engine.save_checkpoint(
+            model_out_path=model_latest_path
+        )
+
+        display_learning_rate(engine.optimizer)
+        if engine.epoch % epoch_per_save == 0:
+            engine.save_checkpoint()

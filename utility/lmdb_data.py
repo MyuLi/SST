@@ -92,6 +92,21 @@ def create_icvl64_31():
         load=h5py.File, augment=True,
     )
 
+def createDCmall():
+    print('create wdc...')
+    datadir = '/data/HSI_Data/Hyperspectral_Project/WDC/train/'
+    fns = os.listdir(datadir) 
+    
+    fns = [fn.split('.')[0]+'.mat' for fn in fns]
+    create_lmdb_train(
+        datadir, fns, '/data/HSI_Data/Hyperspectral_Project/WDC/wdc', 'data',  # your own dataset address
+        crop_sizes=None,
+        scales=(1, 0.5, 0.25),        
+        ksizes=(191, 64, 64),
+        strides=[(191, 16, 16), (191, 8, 8), (191, 8, 8)],          
+        load=scio.loadmat, augment=True,
+    )
+    
 def createApex():
     print('create apex...')
     datadir = '/data/HSI_Data/Hyperspectral_Project/apex_crop/'
