@@ -2,7 +2,9 @@
 
 
 ## Prepare Dataset
-All the testing data are avalibal at [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0. You can also generate testing samples byyourself through utility/dataset.py.
+All the testing data are avalibal at [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0.  
+Due to the space limitation, we only provide some examples of testing data in [Google Driver](https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing). 
+You can also generate testing samples by yourself through utility/dataset.py.
 
 ### ICVL dataset
 * The entire ICVL dataset download link: https://icvl.cs.bgu.ac.il/hyperspectral/
@@ -25,16 +27,16 @@ python utility/mat_data.py
 
 The codes for split it to traning, testing, validating are available at utility/mat_data.py splitWDC().  Run the createDCmall() function in utility/lmdb_data.py to generate training lmdb dataset.
 ### Urban dataset
-* The training dataset are from link: https://apex-esa.org/. The origin Urban dataset are from link: 
+* The training dataset are from link: https://apex-esa.org/. The origin Urban dataset are from link:  https://rslab.ut.ac.ir/data.
 
 1. Run the create_big_apex_dataset() funtion in utility/mat_data.py to generate training samples.
 
 2. Run the createDCmall() function in utility/lmdb_data.py to generate training lmdb dataset.
 
 
-## Experiement:
+## Experiement
 
-checkpoints are available at https://rslab.ut.ac.ir/data.
+checkpoints are available at
 
 * [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0  
 
