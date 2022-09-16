@@ -113,7 +113,7 @@ def createApex():
     
     fns = os.listdir(datadir) 
     create_lmdb_train(
-        datadir, fns, '/data/HSI_Data/Hyperspectral_Project/apex_large', 'data',  # your own dataset address
+        datadir, fns, '/data/HSI_Data/Hyperspectral_Project/apex', 'data',  # your own dataset address
         crop_sizes=None,
         scales=(1, 0.5,0.5,0.25),        
         ksizes=(210, 64, 64),
