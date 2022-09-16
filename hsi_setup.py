@@ -278,16 +278,6 @@ class Engine(object):
 
         self.get_net().load_state_dict(checkpoint['net'])
         
-        # model_dict = self.get_net().state_dict()
-        # pretrained_dict = {k: v for k, v in checkpoint['net'].items() if k in model_dict}
-        # model_dict.update(pretrained_dict)
-        # self.get_net().load_state_dict(model_dict)
-        
-        # state = {
-        #     'net': model_dict,
-        # }
-    
-        # torch.save(state, 'checkpoints/urban_real.pth')
         
 
     def train(self, train_loader,val):
