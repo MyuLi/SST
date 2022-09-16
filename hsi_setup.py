@@ -287,7 +287,7 @@ class Engine(object):
         #     'net': model_dict,
         # }
     
-        # torch.save(state, 'checkpoints/wdc_gaussian.pth')
+        # torch.save(state, 'checkpoints/urban_real.pth')
         
 
     def train(self, train_loader,val):
@@ -363,17 +363,17 @@ class Engine(object):
                           % (avg_loss, psnr, avg_psnr))
                 
                 psnr = []
-                h,w=inputs.shape[-2:]
+                c,h,w=inputs.shape[-3:]
                 result = outputs.squeeze().cpu().detach().numpy()
             
                 img = targets.squeeze().cpu().numpy()
                 
-                for k in range(31):
+                for k in range(c):
                     psnr.append(10*np.log10((h*w)/sum(sum((result[k]-img[k])**2))))
                 PSNR.append(sum(psnr)/len(psnr))
                 
                 mse = sum(sum(sum((result-img)**2)))
-                mse /= 31*h*w
+                mse /= c*h*w
                 mse *= 255*255
                 rmse = np.sqrt(mse)
                 RMSE.append(rmse)
@@ -381,7 +381,7 @@ class Engine(object):
                 ssim = []
                 k1 = 0.01
                 k2 = 0.03
-                for k in range(31):
+                for k in range(c):
                     ssim.append((2*np.mean(result[k])*np.mean(img[k])+k1**2) \
                         *(2*np.cov(result[k].reshape(h*w), img[k].reshape(h*w))[0,1]+k2**2) \
                         /(np.mean(result[k])**2+np.mean(img[k])**2+k1**2) \
@@ -396,9 +396,9 @@ class Engine(object):
                 SAM.append(sam)
 
                 ergas = 0.
-                for k in range(31):
+                for k in range(c):
                     ergas += np.mean((img[k]-result[k])**2)/np.mean(img[k])**2
-                ergas = 100*np.sqrt(ergas/31)
+                ergas = 100*np.sqrt(ergas/c)
                 ERGAS.append(ergas)
 
         print(sum(PSNR)/len(PSNR), sum(RMSE)/len(RMSE), sum(SSIM)/len(SSIM), sum(SAM)/len(SAM), sum(ERGAS)/len(ERGAS))
@@ -425,8 +425,8 @@ class Engine(object):
         with torch.no_grad():
             for batch_idx, (inputs, targets) in enumerate(valid_loader):
                 _,channel, width, height = inputs.shape
-                input_patch = torch.zeros((64,31,64,64),dtype=torch.float)
-                targets_patch = torch.zeros((64,31,64,64),dtype=torch.float)
+                input_patch = torch.zeros((64,channel,64,64),dtype=torch.float)
+                targets_patch = torch.zeros((64,channel,64,64),dtype=torch.float)
                 num = 0
                 for i in range(width//patch_size):
                     for j in range(height//patch_size):
@@ -457,21 +457,21 @@ class Engine(object):
             
                 img_patch = targets.squeeze().cpu().numpy()
                 
-                result = np.zeros((31,512,512))
-                img = np.zeros((31,512,512))
-                h,w=result.shape[-2:]
+                result = np.zeros((channel,512,512))
+                img = np.zeros((channel,512,512))
+                c,h,w=result.shape[-3:]
                 num=0
                 for i in range(width//patch_size):
                     for j in range(height//patch_size):
                         result[:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size] = result_patch[num]
                         img[:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size] = img_patch[num]
                         num += 1
-                for k in range(31):
+                for k in range(c):
                     psnr.append(10*np.log10((h*w)/sum(sum((result[k]-img[k])**2))))
                 PSNR.append(sum(psnr)/len(psnr))
                 
                 mse = sum(sum(sum((result-img)**2)))
-                mse /= 31*h*w
+                mse /= c*h*w
                 mse *= 255*255
                 rmse = np.sqrt(mse)
                 RMSE.append(rmse)
@@ -479,7 +479,7 @@ class Engine(object):
                 ssim = []
                 k1 = 0.01
                 k2 = 0.03
-                for k in range(31):
+                for k in range(c):
                     ssim.append((2*np.mean(result[k])*np.mean(img[k])+k1**2) \
                         *(2*np.cov(result[k].reshape(h*w), img[k].reshape(h*w))[0,1]+k2**2) \
                         /(np.mean(result[k])**2+np.mean(img[k])**2+k1**2) \
@@ -494,9 +494,9 @@ class Engine(object):
                 SAM.append(sam)
 
                 ergas = 0.
-                for k in range(31):
+                for k in range(c):
                     ergas += np.mean((img[k]-result[k])**2)/np.mean(img[k])**2
-                ergas = 100*np.sqrt(ergas/31)
+                ergas = 100*np.sqrt(ergas/c)
                 ERGAS.append(ergas)
                 
                 # scio.savemat('/data/HSI_Data/Hyperspectral_Project/Urban_result/Ours/'+filenames[batch_idx], {'result': result})
@@ -536,17 +536,17 @@ class Engine(object):
                           % (avg_loss, psnr, avg_psnr))
                 
                 psnr = []
-                h,w=inputs.shape[-2:]
+                c,h,w=inputs.shape[-2:]
                 
                 result = outputs.squeeze().cpu().detach().numpy()
             
                 img = targets.squeeze().cpu().numpy()
-                for k in range(31):
+                for k in range(c):
                     psnr.append(10*np.log10((h*w)/sum(sum((result[k]-img[k])**2))))
                 PSNR.append(sum(psnr)/len(psnr))
                 
                 mse = sum(sum(sum((result-img)**2)))
-                mse /= 31*h*w
+                mse /= c*h*w
                 mse *= 255*255
                 rmse = np.sqrt(mse)
                 RMSE.append(rmse)
@@ -554,7 +554,7 @@ class Engine(object):
                 ssim = []
                 k1 = 0.01
                 k2 = 0.03
-                for k in range(31):
+                for k in range(c):
                     ssim.append((2*np.mean(result[k])*np.mean(img[k])+k1**2) \
                         *(2*np.cov(result[k].reshape(h*w), img[k].reshape(h*w))[0,1]+k2**2) \
                         /(np.mean(result[k])**2+np.mean(img[k])**2+k1**2) \
@@ -569,9 +569,9 @@ class Engine(object):
                 SAM.append(sam)
 
                 ergas = 0.
-                for k in range(31):
+                for k in range(c):
                     ergas += np.mean((img[k]-result[k])**2)/np.mean(img[k])**2
-                ergas = 100*np.sqrt(ergas/31)
+                ergas = 100*np.sqrt(ergas/c)
                 ERGAS.append(ergas)
                 
         

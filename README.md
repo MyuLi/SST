@@ -78,11 +78,11 @@ python hsi_denoising_test.py -a sst_wdc -p sst_complex -r -rp checkpoints/wdc_co
 ***
 ### Training for real dataset
 ```
-python hsi_denoising_single.py -a sst -p sst_gaussian -b 8 
+python hsi_denoising_urban.py -a sst_urban -p sst_gaussian -b 8 
 ```
 ### Testing on real dataset
 ```
 
-python hsi_denoising_test.py -a sst -p sst_complex -r -rp checkpoints/checkpoints_complex.pth
+python hsi_denoising_urban_test.py -a sst_urban -p sst_urban -r -rp checkpoints/urban_real.pth 
 
 ```
