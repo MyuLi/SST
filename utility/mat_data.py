@@ -8,7 +8,8 @@ from scipy.io import loadmat, savemat
 from util import crop_center, Visualize3D, minmax_normalize, rand_crop
 from PIL import Image
 from utility.util import minmax_normalize,BandMinMaxQuantileStateful
-
+import skimage
+import torch
 def create_big_apex_dataset():
     total_num = 20
     print('processing---')
