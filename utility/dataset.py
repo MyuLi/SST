@@ -672,6 +672,6 @@ def addNoise2ICVL():
                 1, 2, 0),'sigma':n_sigma, 'input': noisyhsi.transpose(1, 2, 0)})
 
 if __name__ == '__main__':
-    addNoise2ICVL ()
+    addNoise2ICVL()
 
 

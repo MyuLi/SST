@@ -1,5 +1,34 @@
-# Code for Spatial-Spectral Transformer for Hyperspectral Image Denoising
+# This repository contains the official implementation of " Spatial-Spectral Transformer for Hyperspectral Image Denoising" in AAAI 2023
 
+<hr />
+
+> **Abstract:** *Hyperspectral image (HSI) denoising is a crucial preprocessing procedure for subsequent HSI applications. Unfortunately, though witnessing the development of deep learning in HSI denoising area, existing convolution-based methods face the trade-off between computational efficiency and capability to model non-local characteristics of HSI. In this paper, we propose a Spatial-Spectral Transformer (SST) to alleviate this problem. To fully explore intrinsic similarity characteristics in both spatial dimension and spectral dimension, we conduct non-local spatial self-attention and global spectral self-attention with Transformer architecture. The window-based spatial self-attention focuses on the spatial similarity beyond neighboring region. While, spectral self-attention exploits the long-range dependencies between highly correlative bands. Experimental results show that our proposed method outperforms the state-of-the-art HSI denoising methods in quantitative quality and visual results.* 
+<hr />
+
+## Network Architecture
+
+<img src = "figs/attn.png"> 
+<p align="center">
+<img src = "figs/frame.png"  width="50%" > 
+</p>
+
+## Installation
+```
+git clone https://github.com/MyuLi/SST.git
+cd SST
+pip install -r requirements.txt
+```
+
+## Contents
+[1. Prepare Dataset](#1) 
+
+[2. Models](#2) 
+
+[3. Traning and Tetsting](#3) 
+
+[4. Results](#4) 
+
+<p id="1"></p> 
 
 ## Prepare Dataset
 All the testing data are avalibal at [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0.  
@@ -35,14 +64,17 @@ The codes for split it to traning, testing, validating are available at utility/
 
 2. Run the createDCmall() function in utility/lmdb_data.py to generate training lmdb dataset.
 
+<p id="2"></p> 
 
-## Experiement
-
-checkpoints are available at
+## Models
 
 * [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0  
 
 * [Google Driver](https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing)
+
+<p id="3"></p> 
+## Training and Testing
+
 ### Training on ICVL dataset
 ```
 #for gaussian noise
@@ -55,7 +87,7 @@ python hsi_denoising_complex.py -a sst -p sst_gaussian -b 8
 ### Testing on ICVL dataset
 ```
 #for guassian noise
-python hsi_denoising_test.py -a sst -p sst_gaussian -r -rp checkpoints/checkepoints_guassian.pth  --testdir  /data/HSI_Data/icvl_noise_50/512_random/
+python hsi_denoising_test.py -a sst -p sst_gaussian -r -rp checkpoints/checkpoints_gaussian.pth  --testdir  /data/HSI_Data/icvl_noise_50/512_10_70/
 
 #for complex noise
 python hsi_denoising_test.py -a sst -p sst_complex -r -rp checkpoints/checkpoints_complex.pth --testdir  /data/HSI_Data/icvl_noise_50/512_noniid/
@@ -90,3 +122,27 @@ python hsi_denoising_urban.py -a sst_urban -p sst_gaussian -b 8
 python hsi_denoising_urban_test.py -a sst_urban -p sst_urban -r -rp checkpoints/urban_real.pth 
 
 ```
+
+<p id="4"></p> 
+
+## Results
+Experiments are performed on different datasetas, including ICVL dataset (Gaussian noise and Complex noise) and Urban dataset. 
+
+<details>
+<summary><strong>Gaussian noise on ICVL dataset</strong> (click to expand) </summary>
+
+<img src = "figs/gaussian.png"> 
+</details>
+
+<details>
+<summary><strong>Complex noise on ICVL dataset</strong> (click to expand) </summary>
+
+<img src = "figs/complex.png"> 
+</details>
+<details>
+<summary><strong>Real data Denoising</strong> (click to expand) </summary>
+<img src = "figs/urban.png"> 
+</details>
+
+
+

@@ -20,24 +20,6 @@ model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
 
-
-
-class MultipleLoss(nn.Module):
-    def __init__(self, losses, weight=None):
-        super(MultipleLoss, self).__init__()
-        self.losses = nn.ModuleList(losses)
-        self.weight = weight or [1/len(self.losses)] * len(self.losses)
-    
-    def forward(self, predict, target):
-        total_loss = 0
-        for weight, loss in zip(self.weight, self.losses):
-            total_loss += loss(predict, target) * weight
-        return total_loss
-
-    def extra_repr(self):
-        return 'weight={}'.format(self.weight)
-
-
 def train_options(parser):
     def _parse_str_args(args):
         str_args = args.split(',')
@@ -159,7 +141,7 @@ class Engine(object):
         self.net = models.__dict__[self.opt.arch]()
         # initialize parameters
         #print(self.net)
-       # init_params(self.net, init_type=self.opt.init) # disable for default initialization
+        init_params(self.net, init_type=self.opt.init) # disable for default initialization
 
         if len(self.opt.gpu_ids) > 1:
             from models.sync_batchnorm import DataParallelWithCallback
@@ -190,8 +172,7 @@ class Engine(object):
             self.writer = get_summary_writer(os.path.join(self.basedir, 'logs'), self.opt.prefix)
 
         """Optimization Setup"""
-        # self.optimizer = optim.Adam(
-        #     self.net.parameters(), lr=self.opt.lr, weight_decay=self.opt.wd, amsgrad=False)
+
         self.optimizer  = optim.AdamW(self.net.parameters(), lr=self.opt.lr, betas=(0.9, 0.999),eps=1e-8, weight_decay=1e-4)
 
         """Resume previous model"""
@@ -237,27 +218,13 @@ class Engine(object):
         total_norm = None
         self.net.eval()
         
-        if self.get_net().bandwise:
-            O = []
-            for time, (i, t) in enumerate(zip(inputs.split(1, 1), targets.split(1, 1))):
-                o = self.net(i)
-                O.append(o)
-                loss = self.criterion(o, t)
-                if train:
-                    loss.backward()
-                loss_data += loss.item()
-            outputs = torch.cat(O, dim=1)
-        else:
-           
-           
-            outputs = torch.clamp(self.net(inputs), 0, 1)
-            
-            
-            loss = self.criterion(outputs[...], targets) #memnet
+        
+        outputs =self.net(inputs)
+        loss = self.criterion(outputs[...], targets) #memnet
 
-            if train:
-                loss.backward()
-            loss_data += loss.item()
+        if train:
+            loss.backward()
+        loss_data += loss.item()
         if train:
             total_norm = nn.utils.clip_grad_norm_(self.net.parameters(), self.opt.clip)
             self.optimizer.step()
@@ -286,11 +253,9 @@ class Engine(object):
         train_loss = 0
         train_psnr = 0
         for batch_idx, (inputs, targets) in enumerate(train_loader):
-            # if (batch_idx+1)%(1000)==0:
-            #     self.validate(val, 'icvl-validate-noniid')
+
             if not self.opt.no_cuda:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)            
-                #print(inputs.shape,inputs.type)
             outputs, loss_data, total_norm = self.__step(True, inputs, targets)
             train_loss += loss_data
             avg_loss = train_loss / (batch_idx+1)
@@ -381,7 +346,6 @@ class Engine(object):
                 temp = (np.sum(result*img, 0) + np.spacing(1)) \
                     /(np.sqrt(np.sum(result**2, 0) + np.spacing(1))) \
                     /(np.sqrt(np.sum(img**2, 0) + np.spacing(1)))
-                #print(np.arccos(temp)*180/np.pi)
                 sam = np.mean(np.arccos(temp))*180/np.pi
                 SAM.append(sam)
 
@@ -396,104 +360,6 @@ class Engine(object):
         print(avg_psnr, avg_loss,avg_sam)
         return avg_psnr, avg_loss,avg_sam
 
-    def test_patch(self, valid_loader, filen,patch_size=64):
-        self.net.eval()
-        validate_loss = 0
-        total_psnr = 0
-        total_sam = 0
-        RMSE = []
-        SSIM = []
-        SAM = []
-        ERGAS = []
-        PSNR = []
-        filenames = [
-                fn
-                for fn in os.listdir(filen)
-                if fn.endswith('.mat')
-            ]
-        print('[i] Eval dataset ...')
-        with torch.no_grad():
-            for batch_idx, (inputs, targets) in enumerate(valid_loader):
-                _,channel, width, height = inputs.shape
-                input_patch = torch.zeros((64,channel,64,64),dtype=torch.float)
-                targets_patch = torch.zeros((64,channel,64,64),dtype=torch.float)
-                num = 0
-                for i in range(width//patch_size):
-                    for j in range(height//patch_size):
-                        
-                        sub_image = inputs[:,:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size]
-                        input_patch[num] = sub_image
-                        targets_patch[num] = targets[:,:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size]
-                        num += 1
-                if not self.opt.no_cuda:
-                    inputs, targets = input_patch.to(self.device), targets_patch.to(self.device)   
-                outputs, loss_data, _ = self.__step(False, inputs, targets)
-
-                psnr = np.mean(cal_bwpsnr(outputs, targets))
-                sam = cal_sam(outputs, targets)
-                validate_loss += loss_data
-                total_sam += sam
-                avg_loss = validate_loss / (batch_idx+1)
-                avg_sam = total_sam / (batch_idx+1)
-
-                total_psnr += psnr
-                avg_psnr = total_psnr / (batch_idx+1)
-
-                progress_bar(batch_idx, len(valid_loader), 'Loss: %.4e | PSNR: %.4f | AVGPSNR: %.4f '
-                          % (avg_loss, psnr, avg_psnr))
-                
-                psnr = []
-                result_patch = outputs.squeeze().cpu().detach().numpy()
-            
-                img_patch = targets.squeeze().cpu().numpy()
-                
-                result = np.zeros((channel,512,512))
-                img = np.zeros((channel,512,512))
-                c,h,w=result.shape[-3:]
-                num=0
-                for i in range(width//patch_size):
-                    for j in range(height//patch_size):
-                        result[:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size] = result_patch[num]
-                        img[:, i*patch_size:(i+1)*patch_size, j*patch_size:(j+1)*patch_size] = img_patch[num]
-                        num += 1
-                for k in range(c):
-                    psnr.append(10*np.log10((h*w)/sum(sum((result[k]-img[k])**2))))
-                PSNR.append(sum(psnr)/len(psnr))
-                
-                mse = sum(sum(sum((result-img)**2)))
-                mse /= c*h*w
-                mse *= 255*255
-                rmse = np.sqrt(mse)
-                RMSE.append(rmse)
-
-                ssim = []
-                k1 = 0.01
-                k2 = 0.03
-                for k in range(c):
-                    ssim.append((2*np.mean(result[k])*np.mean(img[k])+k1**2) \
-                        *(2*np.cov(result[k].reshape(h*w), img[k].reshape(h*w))[0,1]+k2**2) \
-                        /(np.mean(result[k])**2+np.mean(img[k])**2+k1**2) \
-                        /(np.var(result[k])+np.var(img[k])+k2**2))
-                SSIM.append(sum(ssim)/len(ssim))
-
-                temp = (np.sum(result*img, 0) + np.spacing(1)) \
-                    /(np.sqrt(np.sum(result**2, 0) + np.spacing(1))) \
-                    /(np.sqrt(np.sum(img**2, 0) + np.spacing(1)))
-                #print(np.arccos(temp)*180/np.pi)
-                sam = np.mean(np.arccos(temp))*180/np.pi
-                SAM.append(sam)
-
-                ergas = 0.
-                for k in range(c):
-                    ergas += np.mean((img[k]-result[k])**2)/np.mean(img[k])**2
-                ergas = 100*np.sqrt(ergas/c)
-                ERGAS.append(ergas)
-                
-                # scio.savemat('/data/HSI_Data/Hyperspectral_Project/Urban_result/Ours/'+filenames[batch_idx], {'result': result})
-        print(sum(PSNR)/len(PSNR), sum(RMSE)/len(RMSE), sum(SSIM)/len(SSIM), sum(SAM)/len(SAM), sum(ERGAS)/len(ERGAS))
-        
-        print(avg_psnr, avg_loss,avg_sam)
-        return avg_psnr, avg_loss,avg_sam
 
     def validate(self, valid_loader, name,patch_size=64):
         self.net.eval()
