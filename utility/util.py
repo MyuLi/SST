@@ -15,7 +15,7 @@ from functools import partial
 from scipy.ndimage import zoom
 from matplotlib.widgets import Slider
 from PIL import Image
-
+from torchvision.transforms import Compose
 
 def Data2Volume(data, ksizes, strides):
     """

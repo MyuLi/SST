@@ -30,7 +30,7 @@ if __name__ == '__main__':
     target_transform = HSI2Tensor()
 
     train_transform = Compose([
-        AddNoiseBlindv1(50,50),
+        AddNoiseBlindv1(10,70),
         HSI2Tensor()
     ])
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     while engine.epoch < 100:
         np.random.seed()
 
-        if engine.epoch == 50:
+        if engine.epoch == 60:
             adjust_learning_rate(engine.optimizer, base_lr*0.1)
         
 

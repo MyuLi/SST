@@ -47,10 +47,6 @@ if __name__ == '__main__':
     train_dataset = ImageTransformDataset(icvl_64_31, train_transform,target_transform)
     print('==> Preparing data..')
 
-    # icvl_64_31_TL = make_dataset(
-    #     opt, train_transform,
-    #     target_transform, common_transform, 64)
-
     """Test-Dev"""
     folder_mat = '/data/HSI_Data/icvl_noise_50/512_mix'
     
@@ -83,12 +79,11 @@ if __name__ == '__main__':
     epoch_per_save = 5
     adjust_learning_rate(engine.optimizer, opt.lr)
 
-    # from epoch 50 to 100
     engine.epoch  = 0
     while engine.epoch < 100:
         np.random.seed()
 
-        if engine.epoch == 50:
+        if engine.epoch == 60:
             adjust_learning_rate(engine.optimizer, base_lr*0.1)
 
 

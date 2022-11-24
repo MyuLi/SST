@@ -39,11 +39,9 @@ if __name__ == '__main__':
         ),
         HSI2Tensor()
     ])
-    #change to 10 for sms_10
 
     wdc_64_31 = LMDBDataset('/data5/limiaoyu/data/Hyperspectral_Project/WDC/train/data.db',repeat=10)
-    
-    
+
     target_transform = HSI2Tensor()
     train_dataset = ImageTransformDataset(wdc_64_31, train_transform,target_transform)
     print('==> Preparing data..')

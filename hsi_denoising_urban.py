@@ -39,16 +39,13 @@ if __name__ == '__main__':
     train_dataset = ImageTransformDataset(icvl_64_31, train_transform,target_transform)
     print('==> Preparing data..')
 
-    # icvl_64_31_TL = make_dataset(
-    #     opt, train_transform,
-    #     target_transform, common_transform, 64)
 
     """Test-Dev"""
     basefolder = '/data/HSI_Data/Hyperspectral_Project/'
     
     
     mat_datasets = [MatDataFromFolder(
-        basefolder, size=1,fns=['Urban_304_minmax.mat']) ]
+        basefolder, size=1,fns=['Urban.mat']) ]
 
     if not engine.get_net().use_2dconv:
         mat_transform = Compose([
@@ -78,27 +75,18 @@ if __name__ == '__main__':
     adjust_learning_rate(engine.optimizer, opt.lr)
 
     # from epoch 50 to 100
-    engine.epoch  = 80
+    engine.epoch  = 100
     while engine.epoch < 100:
         np.random.seed()
 
-        if engine.epoch == 11:
-            adjust_learning_rate(engine.optimizer, base_lr*0.5)
-          
-        if engine.epoch == 45:
-            adjust_learning_rate(engine.optimizer, base_lr*0.5*0.5)
-
-        if engine.epoch == 80:
+        if engine.epoch == 60:
             adjust_learning_rate(engine.optimizer, base_lr*0.1)
         
-        # if engine.epoch == 120:
-        #     adjust_learning_rate(engine.optimizer, base_lr*0.1)
 
         
         engine.train(train_loader,mat_loaders[0])
 
-        #engine.test(mat_loaders[0], basefolder)
-        engine.validate(mat_loaders[0], 'icvl-validate-mixture')
+        engine.validate(mat_loaders[0], 'urban')
 
         display_learning_rate(engine.optimizer)
         print('Latest Result Saving...')

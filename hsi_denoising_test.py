@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-from torchvision.transforms import Compose, ToPILImage, ToTensor
+from torchvision.transforms import Compose
 import os
 import argparse
 from utility import *
@@ -64,9 +64,6 @@ if __name__ == '__main__':
     # from epoch 50 to 100
     engine.epoch  = 0
     
-
-        # if engine.epoch == 70:
-        #     adjust_learning_rate(engine.optimizer, base_lr*0.01)
     strart_time = time.time()
     engine.test(mat_loaders[0], basefolder)
     end_time = time.time()

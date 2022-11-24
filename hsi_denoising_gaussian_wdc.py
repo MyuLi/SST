@@ -78,7 +78,7 @@ if __name__ == '__main__':
     while engine.epoch < 100:
         np.random.seed()
  
-        if engine.epoch == 50:
+        if engine.epoch == 60:
             adjust_learning_rate(engine.optimizer, base_lr*0.1)
 
 
@@ -86,7 +86,6 @@ if __name__ == '__main__':
         engine.train(train_loader,mat_loaders[0])
 
         engine.validate(mat_loaders[0], 'icvl-validate-noniid')
-        #engine.validate(mat_loaders[1], 'icvl-validate-mixture')
 
         display_learning_rate(engine.optimizer)
         print('Latest Result Saving...')
