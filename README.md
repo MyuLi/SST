@@ -1,4 +1,8 @@
-# This repository contains the official implementation of " Spatial-Spectral Transformer for Hyperspectral Image Denoising" in AAAI 2023
+# Spatial-Spectral Transformer for Hyperspectral Image Denoising
+
+Miaoyu Li, [Ying Fu](https://ying-fu.github.io/), [Yulun Zhang](http://yulunzhang.com/), "Spatial-Spectral Transformer for Hyperspectral Image Denoising", AAAI, 2023
+
+[paper(arXiv)] [supplementary material]
 
 <hr />
 
@@ -27,6 +31,8 @@ pip install -r requirements.txt
 [3. Traning and Tetsting](#3) 
 
 [4. Results](#4) 
+
+[5. Citations](#5)
 
 <p id="1"></p> 
 
@@ -158,4 +164,18 @@ Experiments are performed on different datasetas, including ICVL dataset (Gaussi
 <img src = "figs/wdc_result.png"> 
 </details>
 
+<p id="5"></p>
+
+## Citations
+
+If you find the code helpful in your resarch or work, please cite the following paper(s).
+
+```
+@inproceedings{li2023spatial,
+    title={Spatial-Spectral Transformer for Hyperspectral Image Denoising},
+    author={Li, Miaoyu and Fu, Ying and Zhang, Yulun},
+    booktitle={AAAI},
+    year={2023}
+}
+```
 
