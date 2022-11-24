@@ -5,8 +5,6 @@ from turtle import forward
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pdb import set_trace as stx
-import numbers
 from einops import rearrange
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
@@ -15,12 +13,8 @@ def window_partition(x, window_size):
     Args:
         x: (B, H, W, C)
         window_size (int): window size
-
-    Returns:
-        windows: (num_windows*B, window_size, window_size, C)
     """
     B, H, W, C = x.shape
-    #print(x.shape,window_size)
     x = x.view(B, H // window_size, window_size, W // window_size, window_size, C)
     windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size, window_size, C)
     return windows
@@ -33,9 +27,6 @@ def window_reverse(windows, window_size, H, W):
         window_size (int): Window size
         H (int): Height of image
         W (int): Width of image
-
-    Returns:
-        x: (B, H, W, C)
     """
     B = int(windows.shape[0] / (H * W / window_size / window_size))
     x = windows.view(B, H // window_size, W // window_size, window_size, window_size, -1)
@@ -61,69 +52,22 @@ class Mlp(nn.Module):
         x = self.drop(x)
         return x
 
-def to_3d(x):
-    return rearrange(x, 'b c h w -> b (h w) c')
+class GSAttention(nn.Module):
+    """global spectral attention (GSA)
 
-def to_4d(x,h,w):
-  
-     return rearrange(x, 'b (h w) c -> b c h w',h=h,w=w)
-
-class BiasFree_LayerNorm(nn.Module):
-    def __init__(self, normalized_shape):
-        super(BiasFree_LayerNorm, self).__init__()
-        if isinstance(normalized_shape, numbers.Integral):
-            normalized_shape = (normalized_shape,)
-        normalized_shape = torch.Size(normalized_shape)
-
-        assert len(normalized_shape) == 1
-
-        self.weight = nn.Parameter(torch.ones(normalized_shape))
-        self.normalized_shape = normalized_shape
-
-    def forward(self, x):
-        sigma = x.var(-1, keepdim=True, unbiased=False)
-        return x / torch.sqrt(sigma+1e-5) * self.weight
-
-class WithBias_LayerNorm(nn.Module):
-    def __init__(self, normalized_shape):
-        super(WithBias_LayerNorm, self).__init__()
-        if isinstance(normalized_shape, numbers.Integral):
-            normalized_shape = (normalized_shape,)
-        normalized_shape = torch.Size(normalized_shape)
-
-        assert len(normalized_shape) == 1
-
-        self.weight = nn.Parameter(torch.ones(normalized_shape))
-        self.bias = nn.Parameter(torch.zeros(normalized_shape))
-        self.normalized_shape = normalized_shape
-
-    def forward(self, x):
-        mu = x.mean(-1, keepdim=True)
-        sigma = x.var(-1, keepdim=True, unbiased=False)
-        return (x - mu) / torch.sqrt(sigma+1e-5) * self.weight + self.bias
-
-
-class LayerNorm(nn.Module):
-    def __init__(self, dim, LayerNorm_type):
-        super(LayerNorm, self).__init__()
-        if LayerNorm_type =='BiasFree':
-            self.body = BiasFree_LayerNorm(dim)
-        else:
-            self.body = WithBias_LayerNorm(dim)
-
-    def forward(self, x):
-        h, w = x.shape[-2:]
-        return to_4d(self.body(to_3d(x)), h, w)
-
-class Attention(nn.Module):
+    Args:
+        dim (int): Number of input channels.
+        num_heads (int): Number of attention heads
+        bias (bool): If True, add a learnable bias to projection
+    """
     def __init__(self, dim, num_heads, bias):
-        super(Attention, self).__init__()
+       
+        super(GSAttention, self).__init__()
         self.num_heads = num_heads
         self.temperature = nn.Parameter(torch.ones(num_heads, 1, 1))
         self.qkv = nn.Conv2d(dim, dim*3, kernel_size=1, bias=bias)
         self.project_out = nn.Conv2d(dim, dim, kernel_size=1, bias=bias)
         
-
 
     def forward(self, x):
         b,c,h,w = x.shape
@@ -133,8 +77,6 @@ class Attention(nn.Module):
         q = rearrange(q, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
         k = rearrange(k, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
         v = rearrange(v, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
-            
-
         q = torch.nn.functional.normalize(q, dim=-1)
         k = torch.nn.functional.normalize(k, dim=-1)
 
@@ -155,9 +97,8 @@ class Attention(nn.Module):
         return flops
 
 
-class WindowAttention(nn.Module):
+class NLSA(nn.Module):
     r""" Window based multi-head self attention (W-MSA) module with relative position bias.
-    It supports both of shifted and non-shifted window.
 
     Args:
         dim (int): Number of input channels.
@@ -171,7 +112,7 @@ class WindowAttention(nn.Module):
 
     def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0.):
 
-        super().__init__()
+        super(NLSA,self).__init__()
         self.dim = dim
         self.window_size = window_size  # Wh, Ww
         self.num_heads = num_heads
@@ -236,36 +177,10 @@ class WindowAttention(nn.Module):
         x = self.proj_drop(x)
         return x
 
-    def flops(self, N):
-        flops = 0
-        flops += N * self.dim * 3 * self.dim
-        flops += self.num_heads * N * (self.dim // self.num_heads) * N
-        flops += self.num_heads * N * N * (self.dim // self.num_heads)
-        flops += N * self.dim * self.dim
-        return flops
-
-class FeedForward(nn.Module):
-    def __init__(self, dim, ffn_expansion_factor, bias):
-        super(FeedForward, self).__init__()
-
-        hidden_features = int(dim*ffn_expansion_factor)
-
-        self.project_in = nn.Conv2d(dim, hidden_features*2, kernel_size=1, bias=bias)
-
-        self.dwconv = nn.Conv2d(hidden_features*2, hidden_features*2, kernel_size=3, stride=1, padding=1, groups=hidden_features*2, bias=bias)
-
-        self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
-
-    def forward(self, x):
-        x = self.project_in(x)
-        x1, x2 = self.dwconv(x).chunk(2, dim=1)
-        x = F.gelu(x1) * x2
-        x = self.project_out(x)
-        return x
 
 
-class SSMTDA(nn.Module):
-    r"""  Transformer Block.
+class SSMA(nn.Module):
+    r"""  Transformer Block:Spatial-Spectral Multi-head self-Attention (SSMA)
 
     Args:
         dim (int): Number of input channels.
@@ -285,7 +200,7 @@ class SSMTDA(nn.Module):
 
     def __init__(self, dim, input_resolution, num_heads, window_size=7, shift_size=0,drop_path=0.0,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,act_layer=nn.GELU,bias=False):
-        super(SSMTDA,self).__init__()
+        super(SSMA,self).__init__()
         self.dim = dim
         self.input_resolution = input_resolution
         self.num_heads = num_heads
@@ -293,7 +208,6 @@ class SSMTDA(nn.Module):
         self.shift_size = shift_size
         self.mlp_ratio = mlp_ratio
         if min(self.input_resolution) <= self.window_size:
-            # if window size is larger than input resolution, we don't partition windows
             self.shift_size = 0
             self.window_size = min(self.input_resolution)
         assert 0 <= self.shift_size < self.window_size, "shift_size must in 0-window_size"
@@ -305,7 +219,7 @@ class SSMTDA(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-        self.attn = WindowAttention(
+        self.attn = NLSA(
             dim, window_size=to_2tuple(self.window_size), num_heads=num_heads,
             qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
 
@@ -318,7 +232,7 @@ class SSMTDA(nn.Module):
 
         self.num_heads = num_heads
 
-        self.spectral_attn = Attention(dim, num_heads, bias)
+        self.spectral_attn = GSAttention(dim, num_heads, bias)
 
     def calculate_mask(self, x_size):
         # calculate attention mask for SW-MSA
@@ -344,11 +258,8 @@ class SSMTDA(nn.Module):
         return attn_mask
 
     def forward(self, x):
-        #H, W = 
-        #B, L, C = x.shape
-       #print(x.shape)
+
         B,C,H,W = x.shape
-       # self.flops([H,W,C])
         x = x.flatten(2).transpose(1, 2)
         shortcut = x
         x = self.norm1(x)
@@ -364,7 +275,7 @@ class SSMTDA(nn.Module):
         x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
         x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
 
-        if self.input_resolution == [H,W]:
+        if self.input_resolution == [H,W]:                        #non-local speatial attention
             attn_windows = self.attn(x_windows, mask=self.attn_mask) 
         else:
             attn_windows = self.attn(x_windows, mask=self.calculate_mask([H,W]).to(x.device))
@@ -382,7 +293,8 @@ class SSMTDA(nn.Module):
         x = x.view(B, H * W, C)
         
         x = x.transpose(1, 2).view(B, C, H, W)
-        x = self.spectral_attn(x)
+
+        x = self.spectral_attn(x)   #global spectral attention
         
         x = x.flatten(2).transpose(1, 2)
         # FFN
@@ -391,20 +303,22 @@ class SSMTDA(nn.Module):
 
         x = x.transpose(1, 2).view(B, C, H, W)
         return x
-    
-    def flops(self,patchresolution):
-        flops = 0
-        H, W,C = patchresolution
-        # W-MSA/SW-MSA
-        nW = H * W / self.window_size / self.window_size
-        N = self.window_size * self.window_size
-        flops += nW * 2 * N * C  * N
-        flops += self.spectral_attn.flops(patchresolution)
-        print(flops)
-        return flops
 
 
 class SMSBlock(nn.Module):
+    """
+        residual spatial-spectral block (RSSB).
+        Args:
+            dim (int, optional): Embedding  dim of features. Defaults to 90.
+            window_size (int, optional): window size of non-local spatial attention. Defaults to 8.
+            depth (int, optional): numbers of Transformer block at this layer. Defaults to 6.
+            num_head (int, optional):Number of attention heads. Defaults to 6.
+            mlp_ratio (int, optional):  Ratio of mlp dim. Defaults to 2.
+            qkv_bias (bool, optional): Learnable bias to query, key, value. Defaults to True.
+            qk_scale (_type_, optional): The qk scale in non-local spatial attention. Defaults to None.
+            drop_path (float, optional): drop_rate. Defaults to 0.0.
+            bias (bool, optional): Defaults to False.
+    """
     def __init__(self,
         dim = 90,
         window_size=8,
@@ -414,8 +328,9 @@ class SMSBlock(nn.Module):
         qkv_bias=True, qk_scale=None,
         drop_path=0.0,
         bias = False):
+
         super(SMSBlock,self).__init__()
-        self.smsblock = nn.Sequential(*[SSMTDA(dim=dim,input_resolution=[64,64], num_heads=num_head, window_size=window_size,
+        self.smsblock = nn.Sequential(*[SSMA(dim=dim,input_resolution=[64,64], num_heads=num_head, window_size=window_size,
                                  shift_size=0 if (i % 2 == 0) else window_size // 2,
                                  mlp_ratio=mlp_ratio,
                                  drop_path = drop_path[i],
@@ -427,11 +342,24 @@ class SMSBlock(nn.Module):
         out = self.smsblock(x)
         out = self.conv(out)+x
         return out
-
-        
+  
     
 class SST(nn.Module):
-    'spatial-spectral'
+    """SST
+     Spatial-Spectral Transformer for Hyperspectral Image Denoising
+
+        Args:
+            inp_channels (int, optional): Input channels of HSI. Defaults to 31.
+            dim (int, optional): Embedding dimension. Defaults to 90.
+            window_size (int, optional): Window size of non-local spatial attention. Defaults to 8.
+            depths (list, optional): Number of Transformer block at different layers of network. Defaults to [ 6,6,6,6,6,6].
+            num_heads (list, optional): Number of attention heads in different layers. Defaults to [ 6,6,6,6,6,6].
+            mlp_ratio (int, optional): Ratio of mlp dim. Defaults to 2.
+            qkv_bias (bool, optional): Learnable bias to query, key, value. Defaults to True.
+            qk_scale (_type_, optional): The qk scale in non-local spatial attention. Defaults to None. If it is set to None, the embedding dimension is used to calculate the qk scale.
+            bias (bool, optional):  Defaults to False.
+            drop_path_rate (float, optional):  Stochastic depth rate of drop rate. Defaults to 0.1.
+    """
     def __init__(self, 
         inp_channels=31, 
         dim = 90,
@@ -446,7 +374,7 @@ class SST(nn.Module):
 
         super(SST, self).__init__()
 
-        self.conv_first = nn.Conv2d(inp_channels, dim, 3, 1, 1)
+        self.conv_first = nn.Conv2d(inp_channels, dim, 3, 1, 1)  #shallow featrure extraction
         self.num_layers = depths
         self.layers = nn.ModuleList()
         print(len(self.num_layers))
@@ -464,7 +392,7 @@ class SST(nn.Module):
             self.layers.append(layer)
             
         self.output = nn.Conv2d(int(dim), dim, kernel_size=3, stride=1, padding=1, bias=bias)
-        self.conv_delasta = nn.Conv2d(dim,inp_channels, 3, 1, 1)
+        self.conv_delasta = nn.Conv2d(dim,inp_channels, 3, 1, 1)  #reconstruction from features
 
     def forward(self, inp_img):
         f1 = self.conv_first(inp_img)
@@ -474,5 +402,4 @@ class SST(nn.Module):
 
         x = self.output(x+f1) 
         x = self.conv_delasta(x)+inp_img
-
         return x

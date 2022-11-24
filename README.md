@@ -134,7 +134,6 @@ python hsi_denoising_urban.py -a sst_urban -p sst_gaussian -b 8
 ### Testing on real dataset
 ```
 python hsi_denoising_urban_test.py -a sst_urban -p sst_urban -r -rp checkpoints/urban_real.pth 
-
 ```
 
 <p id="4"></p> 
