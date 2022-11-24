@@ -35,7 +35,7 @@ if __name__ == '__main__':
     
     
     mat_datasets = [MatDataFromFolder(
-        basefolder, size=50) ]
+        basefolder) ]
 
     if not engine.get_net().use_2dconv:
         mat_transform = Compose([

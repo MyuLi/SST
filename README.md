@@ -68,9 +68,17 @@ The codes for split it to traning, testing, validating are available at utility/
 
 ## Models
 
-* [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0  
 
-* [Google Driver](https://drive.google.com/drive/folders/1Rd4L7YsEoHolVcPxaD8kND3fRxviMHay?usp=sharing)
+| Task | Method | Params (M) | Dataset| Checkpoints|
+| :-----: | :------ | :--------: | :-------: | :------: | 
+| Gaussian noise| SST | 4.10 | ICVL| [GoogleDriver](https://drive.google.com/drive/folders/1U4qYx0IGsfkqEskRmuJMBDCt-EVPGC1_?usp=sharing)|
+| Complex noise | SST |4.10 | ICVL| [GoogleDriver](https://drive.google.com/drive/folders/1U4qYx0IGsfkqEskRmuJMBDCt-EVPGC1_?usp=sharing)|
+| Gaussian noise| SST | 22.69| Washington DC Mall| [GoogleDriver](https://drive.google.com/file/d/1IRYPCjFeOREbxmOzJl86BhLxGnnDZcqe/view?usp=share_link)|
+| Complex noise | SST |22.69 | Washington DC Mall| [GoogleDriver](https://drive.google.com/file/d/1cyYOvYnJ9Q4LiDkEeRhJYJmruLsCYmj2/view?usp=share_link)|
+| Real noise | SST |22.76 | Urban | [GoogleDriver](https://drive.google.com/file/d/1HsPvLVP76vgAZj-9QiSVkAz9Uw_Iwc5d/view?usp=share_link)|
+
+* Checkpoints are also available at [Baidu Disk](https://pan.baidu.com/s/1GqjTFCtNJkkqG4ENyNUFhQ?pwd=azx0) code:azx0  
+
 
 <p id="3"></p> 
 ## Training and Testing
@@ -105,11 +113,11 @@ python hsi_denoising_complex.py -a sst_wdc -p sst_gaussian -b 8
 ### Testing on Wdc dataset
 ```
 #for guassian noise
-python hsi_denoising_test.py -a sst_wdc -p sst_gaussian -r -rp checkpoints/wdc_gaussian.pth --testdir /data/HSI_Data/Hyperspectral_Project/WDC_noise/fixed
+python hsi_denoising_test.py -a sst_wdc -p sst_gaussian -r -rp checkpoints/wdc_gaussian.pth --testdir /data/HSI_Data/Hyperspectral_Project/WDC_noise/fixed/
 
 
 #for complex noise
-python hsi_denoising_test.py -a sst_wdc -p sst_complex -r -rp checkpoints/wdc_complex.pth --testdir /data/HSI_Data/Hyperspectral_Project/WDC_noise/mix
+python hsi_denoising_test.py -a sst_wdc -p sst_complex -r -rp checkpoints/wdc_complex.pth --testdir /data/HSI_Data/Hyperspectral_Project/WDC_noise/mix/
 ```
 ***
 ### Training for real dataset
@@ -144,5 +152,10 @@ Experiments are performed on different datasetas, including ICVL dataset (Gaussi
 <img src = "figs/urban.png"> 
 </details>
 
+<details>
+<summary><strong>Denoising on Washington DC Mall</strong> (click to expand) </summary>
+<img src = "figs/wdc.png"> 
+<img src = "figs/wdc_result.png"> 
+</details>
 
 
