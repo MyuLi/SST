@@ -2,7 +2,7 @@
 
 Miaoyu Li, [Ying Fu](https://ying-fu.github.io/), [Yulun Zhang](http://yulunzhang.com/), "Spatial-Spectral Transformer for Hyperspectral Image Denoising", AAAI, 2023
 
-[paper(arXiv)] [[supplementary material]](https://github.com/MyuLi/SST/releases/download/supp/AAAI_23_SST_supp.pdf)
+[paper(arXiv)](http://arxiv.org/abs/2211.14090) [[supplementary material]](https://github.com/MyuLi/SST/releases/download/supp/AAAI_23_SST_supp.pdf)
 
 <hr />
 
