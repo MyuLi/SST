@@ -101,29 +101,28 @@ python hsi_denoising_complex.py -a sst -p sst_gaussian -b 8
 ```
 ### Testing on ICVL dataset
 ```
-#for guassian noise
+#For guassian noise. The corresponding results are shown in Table 1 of the main paper.
 python hsi_denoising_test.py -a sst -p sst_gaussian -r -rp checkpoints/checkpoints_gaussian.pth  --testdir  /data/HSI_Data/icvl_noise_50/512_10_70/
 
-#for complex noise
+#For complex noise. The corresponding results are shown in Table 2 of the main paper.
 python hsi_denoising_test.py -a sst -p sst_complex -r -rp checkpoints/checkpoints_complex.pth --testdir  /data/HSI_Data/icvl_noise_50/512_noniid/
 ```
 ***
 ### Training on Wdc dataset
 ```
-#for gaussian noise
+#For gaussian noise. 
 python hsi_denoising_single.py -a sst_wdc -p sst_gaussian -b 8 
 
-#for comlpex noise
+#For comlpex noise.  
 python hsi_denoising_complex.py -a sst_wdc -p sst_gaussian -b 8 
-
 ```
 ### Testing on Wdc dataset
 ```
-#for guassian noise
+#For guassian noise. The corresponding results are shown in Table 4 of the supplementary material.
 python hsi_denoising_test.py -a sst_wdc -p sst_gaussian -r -rp checkpoints/wdc_gaussian.pth --testdir /data/HSI_Data/Hyperspectral_Project/WDC_noise/fixed/
 
 
-#for complex noise
+#For complex noise. The corresponding results are shown in Table 4 of the supplementary material.
 python hsi_denoising_test.py -a sst_wdc -p sst_complex -r -rp checkpoints/wdc_complex.pth --testdir /data/HSI_Data/Hyperspectral_Project/WDC_noise/mix/
 ```
 ***
@@ -133,6 +132,7 @@ python hsi_denoising_urban.py -a sst_urban -p sst_gaussian -b 8
 ```
 ### Testing on real dataset
 ```
+#The corresponding results are shown in Figure 6 of the main paper.
 python hsi_denoising_urban_test.py -a sst_urban -p sst_urban -r -rp checkpoints/urban_real.pth 
 ```
 
