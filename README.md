@@ -57,12 +57,14 @@ python utility/lmdb_data.py
 
 ```
 python utility/mat_data.py
+python utility/dataset.py
 ```
 
 ### WDC dataset
 * The entire WDC dataset download link: https://engineering.purdue.edu/~biehl/MultiSpec/hyperspectral.html
 
-The codes for split it to traning, testing, validating are available at utility/mat_data.py splitWDC().  Run the createDCmall() function in utility/lmdb_data.py to generate training lmdb dataset.
+The codes for split it to traning, testing, validating are available at utility/mat_data.py splitWDC().  Run the createDCmall() function in utility/lmdb_data.py to generate training lmdb dataset. To generate testing files with noise, replace the srcdir and dstdir in utility/dataset.py and run utility/dataset.py.
+
 ### Urban dataset
 * The training dataset are from link: https://apex-esa.org/. The origin Urban dataset are from link:  https://rslab.ut.ac.ir/data.
 
@@ -70,6 +72,7 @@ The codes for split it to traning, testing, validating are available at utility/
 
 2. Run the createDCmall() function in utility/lmdb_data.py to generate training lmdb dataset.
 
+3.To generate testing files with noise, replace the srcdir and dstdir and run utility/dataset.py.
 <p id="2"></p> 
 
 ## Models
@@ -93,7 +96,7 @@ The codes for split it to traning, testing, validating are available at utility/
 ### Training on ICVL dataset
 ```
 #for gaussian noise
-python hsi_denoising_single.py -a sst -p sst_gaussian -b 8 
+python hsi_denoising_gaussian.py -a sst -p sst_gaussian -b 8 
 
 #for comlpex noise
 python hsi_denoising_complex.py -a sst -p sst_gaussian -b 8 
@@ -111,10 +114,10 @@ python hsi_denoising_test.py -a sst -p sst_complex -r -rp checkpoints/checkpoint
 ### Training on Wdc dataset
 ```
 #For gaussian noise. 
-python hsi_denoising_single.py -a sst_wdc -p sst_gaussian -b 8 
+python hsi_denoising_gaussian_wdc.py -a sst_wdc -p sst_gaussian -b 8 
 
 #For comlpex noise.  
-python hsi_denoising_complex.py -a sst_wdc -p sst_gaussian -b 8 
+python hsi_denoising_complex_wdc.py -a sst_wdc -p sst_gaussian -b 8 
 ```
 ### Testing on Wdc dataset
 ```

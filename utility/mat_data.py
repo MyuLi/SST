@@ -10,20 +10,44 @@ from PIL import Image
 from utility.util import minmax_normalize,BandMinMaxQuantileStateful
 import skimage
 import torch
+data_path = '/data/HSI_Data/'  #change to datadir
+
 def create_big_apex_dataset():
     total_num = 20
     print('processing---')
-    all_data = loadmat('/data/HSI_Data/Hyperspectral_Project/apex_210.mat')['data']
+    all_data = loadmat(data_path+'Hyperspectral_Project/apex_210.mat')['data']
     print(all_data.shape)
-    save_dir = '/data/HSI_Data/Hyperspectral_Project/apex_crop/'
+    save_dir = data_path+'Hyperspectral_Project/apex_crop/'
     for i in range(total_num):
         data = rand_crop(all_data, 512, 512)
         savemat(save_dir+str(i)+'.mat',{'data': data})
         print(i)
 
 
-def splitWDC():
-    imgpath = '/data/HSI_Data/Hyperspectral_Project/dc.tif'
+def create_mat_dataset(datadir, fnames, newdir, matkey, func=None, load=h5py.File):
+    if not exists(newdir):
+        os.mkdir(newdir)
+    
+
+    for i, fn in enumerate(fnames):
+        print('generate data(%d/%d)' %(i+1, len(fnames)))
+        filepath = join(datadir, fn)
+        try:
+            mat = load(filepath)
+            
+            data = func(mat[matkey][...])
+            data_hwc = data.transpose((2,1,0))
+            savemat(join(newdir, fn), {'data': data_hwc})
+            try:
+                Image.fromarray(np.array(data_hwc*255,np.uint8)[:,:,20]).save(data_path+'icvl_test_512_png/{}.png'.format(os.path.splitext(fn)[0]))
+            except Exception as e:
+                print(e)
+        except:
+            print('open error for {}'.format(fn))
+            continue
+
+def create_WDC_dataset():
+    imgpath = data_path+'Hyperspectral_Project/dc.tif'
     imggt = skimage.io.imread(imgpath)
     # 转为mat
     imggt = torch.tensor(imggt, dtype=torch.float)
@@ -52,6 +76,24 @@ def splitWDC():
     savemat("WDC/test/test.mat", {'data': test})
     savemat("WDC/val/val.mat", {'data': val})
 
+def create_icvl_sr():
+    basedir = data_path
+    datadir = join(basedir, 'icvl_test')
+    newdir = join(basedir, 'icvl_test_512')
+    fnames = os.listdir(datadir)
+    
+    def func(data):
+        data = np.rot90(data, k=-1, axes=(1,2))
+        
+        data = crop_center(data, 512, 512)
+        
+        data = minmax_normalize(data)
+        return data
+    
+    create_mat_dataset(datadir, fnames, newdir, 'rad', func=func)
+
 if __name__ == '__main__':
-    create_big_apex_dataset()
+    #create_big_apex_dataset()
+    create_icvl_sr()
+    #create_WDC_dataset()
 

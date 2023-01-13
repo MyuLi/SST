@@ -79,7 +79,7 @@ def create_lmdb_train(
     
 def create_icvl64_31():
     print('create icvl_31...')
-    datadir = '/data/HSI_Data/icvl_train_gaussian/' # your own data address
+    datadir = '/data/HSI_Data/icvl_train/' # your own data address
     fns = os.listdir(datadir)
     fns = [fn.split('.')[0]+'.mat' for fn in fns]
     
@@ -123,5 +123,6 @@ def createApex():
 
 if __name__ == '__main__':
     #createApex()
+    createDCmall()
     create_icvl64_31()
     pass

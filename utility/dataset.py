@@ -641,22 +641,14 @@ class MetaRandomDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
-def addNoise2ICVL():
-    srcdir = '/data/HSI_Data/icvl_val_gaussian/gt/'
+def addNoiseGaussian(srcdir,dstdir):
 
-#     noisemodel = AddNoiseNoniid(sigmas)
-#    # noisemodel = AddNoiseBlindv2(10,70)
-#     stripemodel = AddNoiseImpulse()
-    # add_noniid_noise = Compose([
-    #     AddNoiseNoniid(sigmas),
-    #     AddNoiseComplex(),
-    # ])
-    #add_noniid_noise = AddNoiseNoniid(sigmas)
     s_sigma = [10,30,50,70]
     #s_sigma = [0]
     for sigma in s_sigma:
-        dstdir = '/data/HSI_Data/icvl_val_gaussian/'+'512_'+str(sigma)
-        mkdir(dstdir)
+        dstdir_noise = dstdir+'/512_'+str(sigma)
+        if not os.path.exists(dstdir_noise):
+            mkdir(dstdir_noise)
         noisemodel = AddNoise(sigma)
         c = 0
         for filename in os.listdir(srcdir):
@@ -665,13 +657,49 @@ def addNoise2ICVL():
             filepath = os.path.join(srcdir, filename)
             mat = loadmat(filepath)
             srchsi = mat['data'].transpose(2,0,1)
-            
             noisyhsi = noisemodel(srchsi)
             n_sigma = sigma/255
-            savemat(os.path.join(dstdir, filename), {'gt': srchsi.transpose(
-                1, 2, 0),'sigma':n_sigma, 'input': noisyhsi.transpose(1, 2, 0)})
+
+            savemat(os.path.join(dstdir_noise, filename), {'gt': srchsi.transpose(
+               1, 2, 0),'sigma':n_sigma, 'input': noisyhsi.transpose(1, 2, 0)})
+
+
+def addNoiseComplex(srcdir,dstdir):
+    sigmas = [10,30,50,70]
+    noise_models = []
+    names = ['noniid','impulse','deadline','stripe','mixture']
+    noise_models.append(AddNoiseNoniid(sigmas))
+    noise_models.append(AddNoiseImpulse())
+    noise_models.append(AddNoiseDeadline())
+    noise_models.append(AddNoiseStripe())
+    add_noniid_noise = Compose([
+        AddNoiseNoniid(sigmas),
+        AddNoiseComplex(),
+    ])
+    noise_models.append(add_noniid_noise)
+
+    for noise_name,noise_model in zip(names,noise_models):
+        dstdir_noise = dstdir+'/512_'+noise_name
+        c = 0
+        if not os.path.exists(dstdir_noise):
+            mkdir(dstdir_noise)
+        for filename in os.listdir(srcdir):
+            c  = c + 1
+            print(c)
+            filepath = os.path.join(srcdir, filename)
+            mat = loadmat(filepath)
+            srchsi = mat['data'].transpose(2,0,1)
+            
+            noisyhsi = noise_model(srchsi)
+            
+            print(dstdir_noise,filepath)
+            savemat(os.path.join(dstdir_noise, filename), {'gt': srchsi.transpose(
+               1, 2, 0), 'input': noisyhsi.transpose(1, 2, 0)})
 
 if __name__ == '__main__':
-    addNoise2ICVL()
+    srcdir = '/data/HSI_Data/icvl_test_50'   #file path of original file
+    dstdir = '/data/HSI_Data/icvl_test_gaussian' #file path to put the testing file
+    addNoiseComplex(srcdir,dstdir)
+    addNoiseGaussian(srcdir,dstdir)
 
 
