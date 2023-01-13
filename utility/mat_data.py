@@ -92,8 +92,23 @@ def create_icvl_sr():
     
     create_mat_dataset(datadir, fnames, newdir, 'rad', func=func)
 
+def create_Urban_test():
+    imgpath = '/data/HSI_Data/Hyperspectral_Project/Urban_F210.mat'
+    img = loadmat(imgpath)
+    print(img.keys())
+    imgg  = img['Y'].reshape((210,307,307))
+    
+    imggt = imgg.astype(np.float32)
+    print(imggt.shape)
+    norm_gt = imggt.transpose((1,2,0))
+    cut_gt = norm_gt[:304,:304,:]
+    cut_gt = minmax_normalize(cut_gt)
+    savemat("/data/HSI_Data/Hyperspectral_Project/Urban_304.mat", {'gt': cut_gt})
+
+
 if __name__ == '__main__':
     #create_big_apex_dataset()
     create_icvl_sr()
     #create_WDC_dataset()
+    #create_Urban_test()
 

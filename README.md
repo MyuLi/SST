@@ -72,7 +72,8 @@ The codes for split it to traning, testing, validating are available at utility/
 
 2. Run the createDCmall() function in utility/lmdb_data.py to generate training lmdb dataset.
 
-3.To generate testing files with noise, replace the srcdir and dstdir and run utility/dataset.py.
+3. Run the create_Urban_test() function in utility/mat_data.py to generate testing samples.
+
 <p id="2"></p> 
 
 ## Models
