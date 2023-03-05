@@ -17,6 +17,74 @@ from matplotlib.widgets import Slider
 from PIL import Image
 from torchvision.transforms import Compose
 
+class BaseNormalizer:
+    def __init__(self):
+        assert hasattr(self, "STATEFUL"), "Missing STATEFUL class attribute"
+
+    def fit(self, x):
+        raise NotImplementedError
+
+    def transform(self, x):
+        raise NotImplementedError
+
+    def get_id(self):
+        attributes = [self.__class__.__name__]
+        attributes += [
+            k[:3] + str(v)
+            for k, v in self.__dict__.items()
+            if not isinstance(v, torch.Tensor)
+        ]
+        return "_".join(attributes).replace(".", "")
+
+    def __repr__(self):
+        return self.get_id()
+
+    def filename(self):
+        return f"{self.get_id()}.pth"
+
+    def save(self, path=None):
+        filename = self.filename()
+        if path:
+            filename = os.path.join(path, filename)
+        torch.save(self.__dict__, filename)
+
+    def load(self, path=None):
+        filename = self.filename()
+        if path:
+            filename = os.path.join(path, filename)
+        state = torch.load(filename)
+        for k, v in state.items():
+            setattr(self, k, v)
+
+class BandMinMaxQuantileStateful(BaseNormalizer):
+    STATEFUL = True
+
+    def __init__(self, low=0.02, up=0.98, epsilon=0.001):
+        super().__init__()
+        self.low = low
+        self.up = up
+        self.epsilon = epsilon
+
+    def fit(self, imgs):
+        x_train = []
+        for i, img in enumerate(imgs):
+            x_train.append(img.flatten(start_dim=1))
+        x_train = torch.cat(x_train, dim=1)
+        bands = x_train.shape[0]
+        q_global = np.zeros((bands, 2))
+        for b in range(bands):
+            q_global[b] = np.percentile(
+                x_train[b].cpu().numpy(), q=100 * np.array([self.low, self.up])
+            )
+
+        self.q = torch.tensor(q_global, dtype=torch.float32).T[..., None, None]
+
+    def transform(self, x):
+        x = torch.minimum(x, self.q[1])
+        x = torch.maximum(x, self.q[0])
+        return (x - self.q[0]) / (self.epsilon + (self.q[1] - self.q[0]))
+
+
 def Data2Volume(data, ksizes, strides):
     """
     Construct Volumes from Original High Dimensional (D) Data

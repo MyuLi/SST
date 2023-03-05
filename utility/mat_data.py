@@ -5,10 +5,9 @@ import h5py
 from os.path import join, exists
 from scipy.io import loadmat, savemat
 
-from util import crop_center, Visualize3D, minmax_normalize, rand_crop
+from util import crop_center, Visualize3D, minmax_normalize, rand_crop,BandMinMaxQuantileStateful
 from PIL import Image
-from utility.util import minmax_normalize,BandMinMaxQuantileStateful
-import skimage
+from skimage import io
 import torch
 data_path = '/data/HSI_Data/'  #change to datadir
 
@@ -48,7 +47,7 @@ def create_mat_dataset(datadir, fnames, newdir, matkey, func=None, load=h5py.Fil
 
 def create_WDC_dataset():
     imgpath = data_path+'Hyperspectral_Project/dc.tif'
-    imggt = skimage.io.imread(imgpath)
+    imggt = io.imread(imgpath)
     # 转为mat
     imggt = torch.tensor(imggt, dtype=torch.float)
     test = imggt[:, 600:800, 50:250].clone()
@@ -108,7 +107,7 @@ def create_Urban_test():
 
 if __name__ == '__main__':
     #create_big_apex_dataset()
-    create_icvl_sr()
-    #create_WDC_dataset()
+    #create_icvl_sr()
+    create_WDC_dataset()
     #create_Urban_test()
 
