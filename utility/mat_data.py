@@ -9,9 +9,22 @@ from util import crop_center, Visualize3D, minmax_normalize, rand_crop,BandMinMa
 from PIL import Image
 from skimage import io
 import torch
+from spectral import *
 data_path = '/data/HSI_Data/'  #change to datadir
 
+def hdr_to_mat():
+    imgpath = data_path+'/Hyperspectral_Project/Apex/APEX_OSD_V1_calibr_cube'
+    
+    img = open_image(imgpath+'.hdr')
+    img = img.load()
+    img = img.transpose((2,0,1))
+
+    apex210 = img[:210]
+    print('load hdr image and save as mat from ',img.shape, ' to ', apex210.shape)
+    savemat(data_path+"Hyperspectral_Project/apex_210.mat", {'data': apex210})
+
 def create_big_apex_dataset():
+    #hdr_to_mat()  #process the hdr file
     total_num = 20
     print('processing---')
     all_data = loadmat(data_path+'Hyperspectral_Project/apex_210.mat')['data']
@@ -108,6 +121,7 @@ def create_Urban_test():
 if __name__ == '__main__':
     #create_big_apex_dataset()
     #create_icvl_sr()
-    create_WDC_dataset()
+    #create_WDC_dataset()
     #create_Urban_test()
+    hdr_to_mat()
 
