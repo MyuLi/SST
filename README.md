@@ -66,7 +66,7 @@ python utility/dataset.py
 The codes for split it to traning, testing, validating are available at utility/mat_data.py splitWDC().  Run the createDCmall() function in utility/lmdb_data.py to generate training lmdb dataset. To generate testing files with noise, replace the srcdir and dstdir in utility/dataset.py and run utility/dataset.py.
 
 ### Urban dataset
-* The training dataset are from link: https://apex-esa.org/. The origin Urban dataset are from link:  https://rslab.ut.ac.ir/data.
+* The training dataset are from: https://apex-esa.org/ as [[direct link for file]](https://apex-esa.org/sites/apexesa/files/downloads/APEX_OSD_Package_1.0.zip). The origin Urban dataset are from link:  https://rslab.ut.ac.ir/data. We also provide these file with mat format in Baidu Disk()
 
 1. Run the create_big_apex_dataset() funtion in utility/mat_data.py to generate training samples.
 

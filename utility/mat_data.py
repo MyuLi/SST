@@ -21,7 +21,7 @@ def hdr_to_mat():
 
     apex210 = img[:210]
     print('load hdr image and save as mat from ',img.shape, ' to ', apex210.shape)
-    savemat(data_path+"Hyperspectral_Project/apex_210.mat", {'data': apex210})
+   # savemat(data_path+"Hyperspectral_Project/apex_210.mat", {'data': apex210})
 
 def create_big_apex_dataset():
     #hdr_to_mat()  #process the hdr file
@@ -39,7 +39,6 @@ def create_big_apex_dataset():
 def create_mat_dataset(datadir, fnames, newdir, matkey, func=None, load=h5py.File):
     if not exists(newdir):
         os.mkdir(newdir)
-    
 
     for i, fn in enumerate(fnames):
         print('generate data(%d/%d)' %(i+1, len(fnames)))
