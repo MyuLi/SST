@@ -430,6 +430,14 @@ class Engine(object):
                 ergas = 100*np.sqrt(ergas/c)
                 ERGAS.append(ergas)
                 
+                # save_path = './imgs/'
+                # result = result.squeeze().cpu().detach().numpy()
+                # for band in range(31):
+                #     img = result[band]*255#
+                #     cv2.imwrite(os.path.join(save_path, filenames[batch_idx][:-4] +'_band_'+str(band)+'.jpg'),cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_RGB2BGR))
+                # color_img = np.concatenate([result[9][np.newaxis,:],result[15][np.newaxis,:],result[28][np.newaxis,:]],0)
+                # color_img = color_img.transpose((1,2,0))*255
+                # cv2.imwrite(os.path.join(save_path, filenames[batch_idx][:-4] +'color.png'),cv2.cvtColor(color_img.astype(np.uint8),cv2.COLOR_RGB2BGR))
         
         print(sum(PSNR)/len(PSNR), sum(RMSE)/len(RMSE), sum(SSIM)/len(SSIM), sum(SAM)/len(SAM), sum(ERGAS)/len(ERGAS))
         if not self.opt.no_log:      
